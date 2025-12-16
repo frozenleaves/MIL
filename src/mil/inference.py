@@ -1,0 +1,185 @@
+import os
+import torch
+import torch.nn as nn
+from PIL import Image
+from transformers import AutoTokenizer
+import torchvision.transforms as transforms
+from config import Config
+from model import UnifiedMultimodalModel
+from wsi_processor import get_virchow2_backbone, extract_wsi_features
+
+class InferencePipeline:
+    def __init__(self, model_checkpoint_path):
+        self.device = torch.device(Config.DEVICE)
+        
+        # 1. 加载主模型
+        print("Loading Main Multimodal Model...")
+        self.model = UnifiedMultimodalModel().to(self.device)
+        
+        # 加载权重
+        checkpoint = torch.load(model_checkpoint_path, map_location=self.device)
+        # 兼容只保存了 state_dict 的情况，也兼容保存了完整 dict 的情况
+        if 'state_dict' in checkpoint:
+            state_dict = checkpoint['state_dict']
+        elif 'model_state_dict' in checkpoint:
+            state_dict = checkpoint['model_state_dict']
+        else:
+            state_dict = checkpoint
+            
+        self.model.load_state_dict(state_dict)
+        self.model.eval()
+        
+        # 2. 文本预处理
+        print("Initializing Text Processor...")
+        self.tokenizer = AutoTokenizer.from_pretrained(Config.QWEN_MODEL_PATH, trust_remote_code=True)
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+            
+        # 3. 普通图片预处理
+        print("Initializing Normal Image Processor...")
+        self.normal_transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+        
+        # 4. WSI 预处理 (Virchow2)
+        print("Initializing Virchow2 for WSI...")
+        self.virchow_model, self.virchow_transform = get_virchow2_backbone(Config.VIRCHOW2_MODEL_ID, self.device)
+        
+        print("Inference Pipeline Ready!")
+
+    def predict(self, text_input: str, image_paths: list, svs_paths: list):
+        """
+        进行单样本推理
+        Args:
+            text_input: 文本描述字符串
+            image_paths: 普通图片路径列表 ['.jpg', ...]
+            svs_paths: WSI 切片路径列表 ['.svs', ...]
+        Returns:
+            predicted_class_id, probabilities
+        """
+        
+        # --- 1. 处理文本 ---
+        text_enc = self.tokenizer(
+            text_input if text_input else "",
+            max_length=Config.MAX_TEXT_LEN,
+            padding='max_length',
+            truncation=True,
+            return_tensors='pt'
+        )
+        input_ids = text_enc['input_ids'].to(self.device)        # (1, L)
+        attention_mask = text_enc['attention_mask'].to(self.device) # (1, L)
+        
+        # --- 2. 处理普通图片 ---
+        img_tensors = []
+        for path in image_paths:
+            if os.path.exists(path):
+                try:
+                    img = Image.open(path).convert('RGB')
+                    img_tensors.append(self.normal_transform(img))
+                except Exception as e:
+                    print(f"Warning: Failed to load image {path}: {e}")
+        
+        if img_tensors:
+            # Stack and add batch dim: (N, C, H, W) -> (1, N, C, H, W)
+            normal_imgs = torch.stack(img_tensors).unsqueeze(0).to(self.device)
+        else:
+            # Placeholder: (1, 1, 3, 224, 224)
+            normal_imgs = torch.zeros(1, 1, 3, 224, 224).to(self.device)
+
+        # --- 3. 处理 WSI (实时提取特征) ---
+        wsi_feat_list = []
+        for svs_path in svs_paths:
+            if not os.path.exists(svs_path):
+                print(f"Warning: SVS file not found: {svs_path}")
+                continue
+                
+            # 临时保存特征文件 (为了复用 extract_wsi_features 函数)
+            # 实际生产环境建议重构 extract_wsi_features 让它直接返回 tensor 而不是存文件
+            # 这里为了复用现有逻辑，我们使用临时文件
+            temp_feat_path = svs_path.replace('.svs', '_temp_feat.pt')
+            
+            try:
+                # 提取特征
+                success = extract_wsi_features(svs_path, temp_feat_path, self.virchow_model, self.virchow_transform)
+                
+                if success:
+                    feat = torch.load(temp_feat_path, map_location='cpu')
+                    # 清理临时文件
+                    if os.path.exists(temp_feat_path):
+                        os.remove(temp_feat_path)
+                        
+                    if feat.ndim == 3:
+                        M, T, D = feat.shape
+                        feat = feat.view(M * T, D)
+                    
+                    wsi_feat_list.append(feat)
+            except Exception as e:
+                print(f"Error processing WSI {svs_path}: {e}")
+
+        if wsi_feat_list:
+            # (Total_Tokens, D) -> (1, Total_Tokens, D)
+            wsi_feat = torch.cat(wsi_feat_list, dim=0).unsqueeze(0).to(self.device)
+            wsi_mask = torch.ones(1, wsi_feat.size(1)).to(self.device)
+        else:
+            # Placeholder
+            wsi_feat = torch.zeros(1, 1, Config.WSI_INPUT_DIM).to(self.device)
+            wsi_mask = torch.zeros(1, 1).to(self.device)
+
+        # --- 4. 模型推理 ---
+        self.model.eval()
+        with torch.no_grad():
+            # 使用混合精度推理
+            with torch.amp.autocast(self.device.type, enabled=Config.USE_AMP, dtype=torch.float16):
+                logits = self.model(input_ids, attention_mask, normal_imgs, wsi_feat, wsi_mask)
+                probs = torch.softmax(logits, dim=1)
+                pred_idx = torch.argmax(probs, dim=1).item()
+                
+        return pred_idx, probs[0].cpu().numpy()
+
+def main():
+    # 示例用法
+    # 1. 设置权重路径
+    checkpoint_path = os.path.join(Config.CHECKPOINT_DIR, "best.pth")
+    if not os.path.exists(checkpoint_path):
+        print(f"Checkpoint not found at {checkpoint_path}, trying last.pth")
+        checkpoint_path = os.path.join(Config.CHECKPOINT_DIR, "last.pth")
+        
+    if not os.path.exists(checkpoint_path):
+        print("No checkpoints found! Please train the model first.")
+        return
+
+    # 2. 初始化推理管道
+    pipeline = InferencePipeline(checkpoint_path)
+
+    # 3. 准备测试数据 (请替换为实际路径)
+    with open("/media/codingma/LLM/lcx/data-1005/已整理-OLK/傅雅婷OLK/傅雅婷+OLK单纯.txt", "r") as f:
+        test_text = f.read()
+    test_images = [
+        #"/media/codingma/LLM/lcx/data-1005/已整理-OLK/傅雅婷OLK/DSC_3503.JPG", 
+    ]
+    test_svs = [
+        #"/media/codingma/LLM/lcx/data-1005/已整理-OLK/傅雅婷OLK/processed/傅雅婷1-中.svs",
+        #"/media/codingma/LLM/lcx/data-1005/已整理-OLK/傅雅婷OLK/processed/傅雅婷2-中.svs",
+    ]
+
+    print("\nStarting Inference...")
+    pred_idx, probs = pipeline.predict(test_text, test_images, test_svs)
+    
+    # 4. 输出结果
+    # 反转 CLASS_MAP 获取类别名称
+    idx_to_class = {v: k for k, v in Config.CLASS_MAP.items()}
+    pred_class = idx_to_class.get(pred_idx, "Unknown")
+    
+    print("\n================ Results ================")
+    print(f"Predicted Class: {pred_class} (ID: {pred_idx})")
+    print("Probabilities:")
+    for idx, prob in enumerate(probs):
+        class_name = idx_to_class.get(idx, f"Class {idx}")
+        print(f"  {class_name}: {prob:.4f}")
+    print("=========================================")
+
+if __name__ == "__main__":
+    main()
+
