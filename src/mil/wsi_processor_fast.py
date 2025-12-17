@@ -11,7 +11,7 @@ from timm.data.transforms_factory import create_transform
 from timm.layers import SwiGLUPacked
 from torch.utils.data import Dataset, DataLoader
 
-from config import Config
+from .config import Config
 
 # --- 1. 高效坐标生成 (新逻辑) ---
 def get_tissue_coords_via_thumbnail(slide, patch_size, level=0, bg_threshold=240, step_size=None):
@@ -242,11 +242,14 @@ def extract_wsi_features(svs_path, save_path, model, transform, config=Config())
         else:
             save_data = final_tokens
         
-        torch.save(save_data, save_path)
-        print(f"[{slide_id}] 完成。Shape: {final_tokens.shape} -> {save_path}")
-        return True
+        if save_path is not None:
+            torch.save(save_data, save_path)
+            print(f"[{slide_id}] 完成。Shape: {final_tokens.shape} -> {save_path}")
+            return save_data
+        else:
+            return save_data
     
-    return False
+    raise RuntimeError("extract_wsi_features failed")
 
 
 # =========================================================

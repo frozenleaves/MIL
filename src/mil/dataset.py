@@ -2,41 +2,121 @@ import torch
 from torch.utils.data import Dataset
 import pandas as pd
 import os
+import random
 from PIL import Image
 from transformers import AutoTokenizer
 import torchvision.transforms as transforms
-from config import Config
+
+from .config import Config
+
 
 class MultimodalDataset(Dataset):
-    def __init__(self, csv_path, mode='train'):
-        self.data = pd.read_csv(csv_path)
+    def __init__(self, data_source, mode='train', expand_factor=1):
+        """
+        Args:
+            data_source: CSV路径 (str) 或 pd.DataFrame 对象
+            mode: 'train' 或 'val'/'test'
+            expand_factor: (int) 仅在训练模式有效。将数据集复制多少倍。
+        """
+        self.mode = mode
         
+        if isinstance(data_source, str):
+            self.data = pd.read_csv(data_source)
+        else:
+            self.data = data_source.copy()
+        
+        # [离线增强思路]：通过复制 DataFrame 来扩充样本基数
+        if self.mode == 'train' and expand_factor > 1:
+            self.data = pd.concat([self.data] * expand_factor, ignore_index=True)
+            # 打乱顺序，避免连续看到同一个样本的变体
+            self.data = self.data.sample(frac=1).reset_index(drop=True)
+
         # 初始化 Qwen Tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(Config.QWEN_MODEL_PATH, trust_remote_code=True)
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-        # 普通图片预处理
-        self.normal_transform = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
+        # [在线增强思路]：训练集使用强数据增强
+        if self.mode == 'train':
+            self.transform = transforms.Compose([
+                transforms.Resize((256, 256)), # 先放大一点
+                transforms.RandomResizedCrop(224, scale=(0.8, 1.0)), # 随机裁剪
+                transforms.RandomHorizontalFlip(p=0.5), # 随机水平翻转
+                transforms.RandomVerticalFlip(p=0.5),   # 随机垂直翻转
+                transforms.RandomRotation(15),          # 随机旋转
+                transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1), # 颜色抖动
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ])
+        else:
+            # 验证/测试集仅做标准化
+            self.transform = transforms.Compose([
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ])
 
     def __len__(self):
         return len(self.data)
+
+    def _get_random_subset(self, paths_str, min_count=0):
+        """
+        [离线/结构增强思路]：从路径字符串中随机选取子集
+        paths_str: "path1;path2;path3"
+        """
+        if not isinstance(paths_str, str) or paths_str == 'nan':
+            return []
+        
+        paths = paths_str.split(';')
+        if len(paths) == 0:
+            return []
+
+        if self.mode == 'train':
+            # 随机选取 k 个，k 在 [min_count, len] 之间
+            # 允许选 0 个，模拟模态缺失
+            k = random.randint(min_count, len(paths))
+            if k == 0:
+                return []
+            return random.sample(paths, k)
+        else:
+            # 验证/测试模式，全选
+            return paths
+
+    def _augment_text(self, text):
+        """
+        [在线增强思路]：文本增强
+        """
+        if self.mode != 'train':
+            return text
+        
+        # 1. 模态丢失模拟 (10% 概率文本完全丢失)
+        if random.random() < 0.1:
+            return ""
+        
+        # 2. 内容随机截取 (20% 概率随机截断文本)
+        # 这里只是简单的按字符截断，也可以按句子截断
+        if len(text) > 10 and random.random() < 0.2:
+            cut_len = random.randint(int(len(text)*0.5), len(text))
+            return text[:cut_len]
+            
+        return text
 
     def __getitem__(self, idx):
         row = self.data.iloc[idx]
         
         # ================= 1. 读取文本文件 =================
         txt_path = row['txt_path']
+        text_content = ""
         try:
-            with open(txt_path, 'r', encoding='utf-8') as f:
-                text_content = f.read().strip()
+            if isinstance(txt_path, str) and os.path.exists(txt_path):
+                with open(txt_path, 'r', encoding='utf-8') as f:
+                    text_content = f.read().strip()
         except Exception:
-            text_content = "" # 容错
+            pass
             
+        # 应用文本增强
+        text_content = self._augment_text(text_content)
+        
         text_enc = self.tokenizer(
             text_content,
             max_length=Config.MAX_TEXT_LEN,
@@ -48,55 +128,47 @@ class MultimodalDataset(Dataset):
         attention_mask = text_enc['attention_mask'].squeeze(0)
 
         # ================= 2. 读取普通图片 (多个) =================
-        img_paths_str = str(row['img_paths'])
+        # 随机选取子集 (可能选出 0 张，模拟图片模态缺失)
+        img_paths = self._get_random_subset(str(row['img_paths']), min_count=0)
+        
         img_tensors = []
-        if img_paths_str and img_paths_str != 'nan':
-            paths = img_paths_str.split(';')
-            for path in paths:
-                if os.path.exists(path):
-                    try:
-                        img = Image.open(path).convert('RGB')
-                        img_tensors.append(self.normal_transform(img))
-                    except:
-                        pass
+        for path in img_paths:
+            if os.path.exists(path):
+                try:
+                    img = Image.open(path).convert('RGB')
+                    # 应用图片增强 (crop, rotate, etc.)
+                    img_tensors.append(self.transform(img))
+                except:
+                    pass
         
         if len(img_tensors) > 0:
             normal_imgs = torch.stack(img_tensors)
         else:
-            normal_imgs = torch.zeros(1, 3, 224, 224) # 占位
+            # 如果没有图片（或被随机mask掉了），返回全0张量
+            normal_imgs = torch.zeros(1, 3, 224, 224) 
 
         # ================= 3. 读取 WSI 特征 (可能多个) =================
-        wsi_paths_str = str(row['wsi_paths'])
-        wsi_feat_list = []
+        # 随机选取子集
+        wsi_paths = self._get_random_subset(str(row['wsi_paths']), min_count=0)
         
-        if wsi_paths_str and wsi_paths_str != 'nan':
-            paths = wsi_paths_str.split(';')
-            for path in paths:
-                if os.path.exists(path):
-                    # Load: [M, 261, 1280] or [M, 2560]
-                    # print(f"Loading WSI feat from {path}")
-                    try:
-                        feat = torch.load(path, map_location='cpu')
-                    except Exception as e:
-                        print(f"Error loading {path}: {e}")
-                        continue
-
-                    # Handle case where features are saved as a dict (with coords)
+        wsi_feat_list = []
+        for path in wsi_paths:
+            if os.path.exists(path):
+                try:
+                    feat = torch.load(path, map_location='cpu')
                     if isinstance(feat, dict) and 'features' in feat:
                         feat = feat['features']
-                        
                     if feat.ndim == 3:
                         M, T, D = feat.shape
-                        # Flatten: [M*261, 1280]
                         feat = feat.view(M * T, D)
-                    # 如果已经是 2D [M, D]，则不需要处理
-                    
                     wsi_feat_list.append(feat)
+                except Exception as e:
+                    pass
         
         if len(wsi_feat_list) > 0:
-            # 如果有多个 svs，直接在序列维度拼接 (Concatenate along sequence dim)
-            wsi_feat = torch.cat(wsi_feat_list, dim=0) # [Total_Tokens, 1280]
+            wsi_feat = torch.cat(wsi_feat_list, dim=0) 
         else:
+            # 如果没有 WSI (或被随机mask掉了)
             wsi_feat = torch.zeros(1, Config.WSI_INPUT_DIM)
 
         label = torch.tensor(int(row['label']), dtype=torch.long)
@@ -110,7 +182,6 @@ class MultimodalDataset(Dataset):
         }
 
 def collate_fn(batch):
-    """(保持不变)"""
     input_ids = torch.stack([item['input_ids'] for item in batch])
     attention_mask = torch.stack([item['attention_mask'] for item in batch])
     labels = torch.stack([item['label'] for item in batch])

@@ -13,7 +13,7 @@ from timm.data.transforms_factory import create_transform
 from timm.layers import SwiGLUPacked
 from torch.utils.data import Dataset, DataLoader
 
-from config import Config
+from .config import Config
 
 
 # --- 辅助函数 ---

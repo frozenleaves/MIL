@@ -1,0 +1,14 @@
+torch>=2.0.0
+torchvision>=0.15.0
+pandas
+scikit-learn
+transformers
+tqdm
+Pillow
+openslide-python
+timm
+
+[dev]
+pytest
+black
+isort

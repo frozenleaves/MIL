@@ -10,10 +10,10 @@ from PIL import Image
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
 from timm.layers import SwiGLUPacked
-from config import Config
+from .config import Config
 # 导入修改后的函数和模型加载器
-from wsi_processor import extract_wsi_features, get_virchow2_backbone
-from wsi_processor_fast import extract_wsi_features as extract_wsi_features_fast
+from .wsi_processor import extract_wsi_features, get_virchow2_backbone
+from .wsi_processor_fast import extract_wsi_features as extract_wsi_features_fast
 
 
 def main():
@@ -76,13 +76,15 @@ def main():
                     # 检查是否已存在，避免重复跑 (可选)
                     if os.path.exists(save_path):
                         print(f" existing: {save_path}")
-                    if not Config.OVERWRITE_SWI_FEATURES:
+                    if not Config.OVERWRITE_SWI_FEATURES and os.path.exists(save_path):
                         wsi_feat_paths.append(save_path)
                         continue
 
                     # 传入预加载的模型和transform
-                    # TODO 可选配置fast版本的extract_wsi_features
-                    success = extract_wsi_features(svs_file, save_path, model, transform)
+                    if Config.USE_FAST_VERSION:
+                        success = extract_wsi_features_fast(svs_file, save_path, model, transform)
+                    else:
+                        success = extract_wsi_features(svs_file, save_path, model, transform)
                     if success:
                         wsi_feat_paths.append(save_path)
 

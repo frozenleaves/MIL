@@ -4,9 +4,11 @@ import torch.nn as nn
 from PIL import Image
 from transformers import AutoTokenizer
 import torchvision.transforms as transforms
-from config import Config
-from model import UnifiedMultimodalModel
-from wsi_processor import get_virchow2_backbone, extract_wsi_features
+
+
+from .config import Config
+from .model import UnifiedMultimodalModel
+from .wsi_processor_fast import get_virchow2_backbone, extract_wsi_features
 
 class InferencePipeline:
     def __init__(self, model_checkpoint_path):
@@ -94,27 +96,18 @@ class InferencePipeline:
             if not os.path.exists(svs_path):
                 print(f"Warning: SVS file not found: {svs_path}")
                 continue
-                
-            # 临时保存特征文件 (为了复用 extract_wsi_features 函数)
-            # 实际生产环境建议重构 extract_wsi_features 让它直接返回 tensor 而不是存文件
-            # 这里为了复用现有逻辑，我们使用临时文件
-            temp_feat_path = svs_path.replace('.svs', '_temp_feat.pt')
             
             try:
                 # 提取特征
-                success = extract_wsi_features(svs_path, temp_feat_path, self.virchow_model, self.virchow_transform)
+                if svs_path.endswith('.svs'):
+                    feat = extract_wsi_features(svs_path, None, self.virchow_model, self.virchow_transform)   
+                elif svs_path.endswith('.pt'):
+                    feat = torch.load(svs_path, map_location='cpu')
+                if feat.ndim == 3:
+                    M, T, D = feat.shape
+                    feat = feat.view(M * T, D)
                 
-                if success:
-                    feat = torch.load(temp_feat_path, map_location='cpu')
-                    # 清理临时文件
-                    if os.path.exists(temp_feat_path):
-                        os.remove(temp_feat_path)
-                        
-                    if feat.ndim == 3:
-                        M, T, D = feat.shape
-                        feat = feat.view(M * T, D)
-                    
-                    wsi_feat_list.append(feat)
+                wsi_feat_list.append(feat)
             except Exception as e:
                 print(f"Error processing WSI {svs_path}: {e}")
 
@@ -141,7 +134,7 @@ class InferencePipeline:
 def main():
     # 示例用法
     # 1. 设置权重路径
-    checkpoint_path = os.path.join(Config.CHECKPOINT_DIR, "best.pth")
+    checkpoint_path = os.path.join(Config.CHECKPOINT_DIR, "best_val.pth")
     if not os.path.exists(checkpoint_path):
         print(f"Checkpoint not found at {checkpoint_path}, trying last.pth")
         checkpoint_path = os.path.join(Config.CHECKPOINT_DIR, "last.pth")

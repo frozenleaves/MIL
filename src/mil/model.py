@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 from transformers import AutoModel
-from config import Config
+
+from .config import Config
 
 class GatedAttentionMIL(nn.Module):
     """
@@ -59,6 +60,7 @@ class UnifiedMultimodalModel(nn.Module):
 
         # ============ 2. 普通图片分支 (ResNet101) ============
         # 升级: ResNet50 -> ResNet101
+        print("Loading Image Model: ResNet101...")
         resnet = models.resnet101(weights='DEFAULT')
         # 去掉最后两层 (AvgPool, FC)，只保留特征层
         # 输出: (B, 2048, 7, 7) -> 需要先 Pool -> (B, 2048)
