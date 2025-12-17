@@ -30,6 +30,7 @@ class Config:
     BATCH_SIZE_WSI = 256    # 特征提取时的 Batch Size
     NUM_WORKERS = 8        # DataLoader workers
     BG_THRESHOLD = 220     # 去除背景的阈值
+    SAVE_COORDS = False
 
     # ================= 训练参数 =================
     NUM_CLASSES = 6
