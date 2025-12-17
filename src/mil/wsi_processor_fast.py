@@ -88,7 +88,7 @@ def get_tissue_coords_via_thumbnail(slide, patch_size, level=0, bg_threshold=240
             # 或者简单点：只要中心点是组织
             patch_mask = tissue_mask[y_seg:y_seg+patch_size_seg, x_seg:x_seg+patch_size_seg]
             
-            # 这里定义：如果Patch里有超过 20% 的像素是组织，则保留
+            # 这里定义：如果Patch里有超过 1% 的像素是组织，则保留
             if np.mean(patch_mask) > 0.01:
                 # 映射回 Level 0 坐标
                 # 注意：OpenSlide read_region 始终需要 Level 0 的 (x, y)
@@ -145,7 +145,7 @@ class WsiPatchDataset(Dataset):
             # 异常处理：返回零张量，确保 Batch 不会崩
             # 更好的做法可能是记录 log
             print(f"Read Error: {e}")
-            return torch.zeros((3, 224, 224)) # 假设 transform 后是 224
+            return torch.zeros((3, self.patch_size, self.patch_size))
 
 # --- 4. 核心流程 ---
 def extract_wsi_features(svs_path, save_path, model, transform, config=Config()):

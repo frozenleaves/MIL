@@ -80,6 +80,10 @@ class MultimodalDataset(Dataset):
                     except Exception as e:
                         print(f"Error loading {path}: {e}")
                         continue
+
+                    # Handle case where features are saved as a dict (with coords)
+                    if isinstance(feat, dict) and 'features' in feat:
+                        feat = feat['features']
                         
                     if feat.ndim == 3:
                         M, T, D = feat.shape
