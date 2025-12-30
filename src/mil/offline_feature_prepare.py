@@ -16,9 +16,7 @@ from .wsi_processor import extract_wsi_features, get_virchow2_backbone
 from .wsi_processor_fast import extract_wsi_features as extract_wsi_features_fast
 
 
-def main():
-    data_records = []
-
+def genereate_wsi_features(overwrite=False):
     # 0. 全局加载模型 (只加载一次)
     print("正在初始化 Virchow2 模型...")
     try:
@@ -28,13 +26,61 @@ def main():
         print(f"模型加载失败: {e}")
         return
 
-    # 1. 遍历 6 个类别文件夹
+    # 1. 遍历每个类别文件夹
     if not os.path.exists(Config.RAW_DATA_ROOT):
         print(f"数据根目录不存在: {Config.RAW_DATA_ROOT}")
         return
 
     class_dirs = [d for d in os.listdir(Config.RAW_DATA_ROOT) if os.path.isdir(os.path.join(Config.RAW_DATA_ROOT, d))]
 
+    for class_name in class_dirs:
+        if class_name not in Config.CLASS_MAP:
+            print(f"Skipping unknown folder: {class_name}")
+            continue
+
+        class_path = os.path.join(Config.RAW_DATA_ROOT, class_name)
+        sample_names = os.listdir(class_path)
+
+        for sample_name in tqdm(sample_names, desc=f"Extracting features for {class_name}"):
+            sample_dir = os.path.join(class_path, sample_name)
+            if not os.path.isdir(sample_dir): continue
+
+            # --- 处理 SVS 文件 (processed 目录下) ---
+            svs_dir = os.path.join(sample_dir, "processed")
+            
+            if os.path.exists(svs_dir):
+                svs_files = glob.glob(os.path.join(svs_dir, "*.svs"))
+
+                for svs_file in svs_files:
+                    svs_filename = os.path.basename(svs_file)
+                    svs_dir_path = os.path.dirname(svs_file)
+                    save_name = os.path.splitext(svs_filename)[0] + ".pt"
+                    save_path = os.path.join(svs_dir_path, save_name)
+
+                    # 检查是否已存在
+                    if os.path.exists(save_path):
+                         # 如果不强制覆盖 且 (Config不强制覆盖)，则跳过
+                         if not overwrite and not Config.OVERWRITE_SWI_FEATURES:
+                             continue
+
+                    # 传入预加载的模型和transform
+                    if Config.USE_FAST_VERSION:
+                        extract_wsi_features_fast(svs_file, save_path, model, transform)
+                    else:
+                        extract_wsi_features(svs_file, save_path, model, transform)
+
+
+def generate_index_file(extract_features=False, overwrite=False):
+    if extract_features:
+        genereate_wsi_features(overwrite=overwrite)
+
+    data_records = []
+    
+    if not os.path.exists(Config.RAW_DATA_ROOT):
+        print(f"数据根目录不存在: {Config.RAW_DATA_ROOT}")
+        return
+
+    class_dirs = [d for d in os.listdir(Config.RAW_DATA_ROOT) if os.path.isdir(os.path.join(Config.RAW_DATA_ROOT, d))]
     print(f"Found classes: {class_dirs}")
 
     for class_name in class_dirs:
@@ -44,11 +90,9 @@ def main():
 
         label = Config.CLASS_MAP[class_name]
         class_path = os.path.join(Config.RAW_DATA_ROOT, class_name)
-
-        # 2. 遍历该类别下的 N 个样本文件夹
         sample_names = os.listdir(class_path)
 
-        for sample_name in tqdm(sample_names, desc=f"Processing {class_name}"):
+        for sample_name in tqdm(sample_names, desc=f"Indexing {class_name}"):
             sample_dir = os.path.join(class_path, sample_name)
             if not os.path.isdir(sample_dir): continue
 
@@ -60,38 +104,18 @@ def main():
             jpg_files = glob.glob(os.path.join(sample_dir, "*.JPG"))
             jpg_paths_str = ";".join(jpg_files)
 
-            # --- C. 处理 SVS 文件 (processed 目录下) ---
+            # --- C. 查找已生成的 PT 文件 ---
             svs_dir = os.path.join(sample_dir, "processed")
             wsi_feat_paths = []
 
             if os.path.exists(svs_dir):
-                svs_files = glob.glob(os.path.join(svs_dir, "*.svs"))
-
-                for svs_file in svs_files:
-                    svs_filename = os.path.basename(svs_file)
-                    svs_dir_path = os.path.dirname(svs_file)
-                    save_name = os.path.splitext(svs_filename)[0] + ".pt"
-                    save_path = os.path.join(svs_dir_path, save_name)
-
-                    # 检查是否已存在，避免重复跑 (可选)
-                    if os.path.exists(save_path):
-                        print(f" existing: {save_path}")
-                    if not Config.OVERWRITE_SWI_FEATURES and os.path.exists(save_path):
-                        wsi_feat_paths.append(save_path)
-                        continue
-
-                    # 传入预加载的模型和transform
-                    if Config.USE_FAST_VERSION:
-                        success = extract_wsi_features_fast(svs_file, save_path, model, transform)
-                    else:
-                        success = extract_wsi_features(svs_file, save_path, model, transform)
-                    if success:
-                        wsi_feat_paths.append(save_path)
+                # 查找 .pt 文件
+                pt_files = glob.glob(os.path.join(svs_dir, "*.pt"))
+                wsi_feat_paths.extend(pt_files)
 
             wsi_paths_str = ";".join(wsi_feat_paths)
 
             # --- D. 记录到列表 ---
-            # 只有当至少有 txt 或者 jpg 或者 wsi 时才记录，防止空目录
             if txt_path or jpg_paths_str or wsi_paths_str:
                 data_records.append({
                     "sample_id": sample_name,
@@ -111,4 +135,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    generate_index_file(extract_features=False)

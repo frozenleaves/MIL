@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import os
+import gc
 import pandas as pd
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -147,9 +148,21 @@ def train():
                  tqdm.write(log_msg)
                  pbar.set_postfix({'loss': f"{current_loss:.4f}"})
 
+        # [新增] Epoch 结束，清理显存和内存
+        try:
+            del logits, loss, preds, input_ids, attn_mask, normal_imgs, wsi_feat, wsi_mask, labels
+        except NameError:
+            pass # 可能 loop 一次都没进
+        torch.cuda.empty_cache()
+        gc.collect()
+
         # Train Metrics
         train_acc = accuracy_score(train_labels, train_preds)
         avg_train_loss = train_loss / len(train_loader)
+        
+        # [新增] 释放列表以节省内存
+        del train_preds, train_labels
+        gc.collect()
         
         # ================= Validation =================
         model.eval()
@@ -182,6 +195,11 @@ def train():
         val_acc = accuracy_score(val_labels, val_preds)
         val_f1 = f1_score(val_labels, val_preds, average='macro')
         avg_val_loss = val_loss / len(val_loader)
+        
+        # [新增] 清理 Val 临时变量
+        del val_preds, val_labels
+        torch.cuda.empty_cache()
+        gc.collect()
         
         print(f"Results Epoch {epoch+1}:")
         print(f"  Train Loss: {avg_train_loss:.4f} | Train Acc: {train_acc:.4f}")

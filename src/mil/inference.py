@@ -19,6 +19,7 @@ class InferencePipeline:
         self.model = UnifiedMultimodalModel().to(self.device)
         
         # 加载权重
+        print(f"Loading checkpoint from {model_checkpoint_path}")
         checkpoint = torch.load(model_checkpoint_path, map_location=self.device)
         # 兼容只保存了 state_dict 的情况，也兼容保存了完整 dict 的情况
         if 'state_dict' in checkpoint:
