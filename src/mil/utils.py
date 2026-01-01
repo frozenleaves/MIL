@@ -4,80 +4,112 @@ import shutil
 import random
 import math
 from tqdm import tqdm
-try:
-    from .config import Config
-except ImportError:
-    from .config import Config
 
-def split_dataset(source_root, target_root, ratio=0.1, seed=42):
+import os
+import random
+import shutil
+
+from .config import Config
+from .doc2txt import doc2txt 
+
+
+def extract_txt_from_doc(data_dir):
+    doc2txt(data_dir)
+    print(f"提取txt文件完成，文件位于doc源文件同位置下，同名txt文件")
+
+
+
+
+def create_symlink_split(source_root, target_root, train_ratio=0.5, seed=42):
     """
-    从源数据集中抽取一定比例的数据作为测试集，移动到目标目录。
-    保持原有目录结构 (Class/Sample/...)。
-    
-    Args:
-        source_root (str): 原始数据集根目录
-        target_root (str): 测试集目标根目录
-        ratio (float): 测试集比例 (默认 0.1)
-        seed (int): 随机种子
+    Creates symlinks for a train/test split from source_root to target_root.
+    target_root should contain 'train' and 'test' directories.
     """
-    if not os.path.exists(source_root):
-        print(f"Error: Source root {source_root} does not exist.")
-        return
-
-    if seed is not None:
-        random.seed(seed)
-
-    print(f"Starting dataset split from {source_root} to {target_root} with ratio {ratio}")
-
-    # 获取所有类别文件夹
-    class_dirs = [d for d in os.listdir(source_root) if os.path.isdir(os.path.join(source_root, d))]
+    random.seed(seed)
     
-    # 过滤掉非类别文件夹（比如已整理-xxx 之外的）
-    # 这里假设所有目录都是类别，或者参考 config.CLASS_MAP
-    # 简单起见，处理所有子文件夹
+    # 确保目标目录存在 train 和 test
+    train_root = os.path.join(target_root, "train")
+    test_root = os.path.join(target_root, "test")
     
-    for class_name in class_dirs:
-        class_src_path = os.path.join(source_root, class_name)
-        class_dst_path = os.path.join(target_root, class_name)
+    if not os.path.exists(train_root):
+        print(f"创建目录: {train_root}")
+        os.makedirs(train_root)
+    if not os.path.exists(test_root):
+        print(f"创建目录: {test_root}")
+        os.makedirs(test_root)
+
+    # 获取源目录下的所有主类别文件夹
+    categories = [d for d in os.listdir(source_root) if os.path.isdir(os.path.join(source_root, d))]
+    
+    print(f"找到以下类别: {categories}")
+    
+    total_train = 0
+    total_test = 0
+
+    for category in categories:
+        src_category_path = os.path.join(source_root, category)
         
-        if not os.path.exists(class_dst_path):
-            os.makedirs(class_dst_path)
-
         # 获取该类别下的样本文件夹
-        samples = [d for d in os.listdir(class_src_path) if os.path.isdir(os.path.join(class_src_path, d))]
+        samples = [s for s in os.listdir(src_category_path) if os.path.isdir(os.path.join(src_category_path, s))]
         
-        total_samples = len(samples)
-        if total_samples == 0:
-            print(f"Warning: No samples found in {class_name}")
-            continue
-            
-        # 计算抽取数量
-        num_test = int(total_samples * ratio)
-        
-        # 保证每个类别至少有一个数据（如果总数允许）
-        if num_test == 0 and total_samples > 0:
-            num_test = 1
-            
         # 随机打乱
         random.shuffle(samples)
         
-        # 选取测试集样本
-        test_samples = samples[:num_test]
+        # 计算分割点
+        current_train_ratio = train_ratio
+        if len(samples) < 50:
+            print(f"类别 {category} 样本数 ({len(samples)}) 少于 40，强制设置 train_ratio 为 0.8")
+            current_train_ratio = 0.8
+
+        split_idx = int(len(samples) * current_train_ratio)
+        train_samples = samples[:split_idx]
+        test_samples = samples[split_idx:]
         
-        print(f"Processing Class: {class_name}")
-        print(f"  - Total samples: {total_samples}")
-        print(f"  - Moving {len(test_samples)} samples to test set...")
-
-        for sample_name in test_samples:
-            src_sample_path = os.path.join(class_src_path, sample_name)
-            dst_sample_path = os.path.join(class_dst_path, sample_name)
-
-            print(f"Moving {src_sample_path} to {dst_sample_path}")
+        print(f"\n处理类别: {category}")
+        print(f"  总样本数: {len(samples)}")
+        print(f"  训练集数量: {len(train_samples)}")
+        print(f"  测试集数量: {len(test_samples)}")
+        
+        # 创建软链接的辅助函数
+        def make_links(sample_list, split_root):
+            count = 0
+            dst_category_path = os.path.join(split_root, category)
+            os.makedirs(dst_category_path, exist_ok=True)
             
-            # 移动文件夹
-            shutil.move(src_sample_path, dst_sample_path)
-            
-    print("Dataset split completed.")
+            for sample in sample_list:
+                src_path = os.path.join(src_category_path, sample)
+                dst_path = os.path.join(dst_category_path, sample)
+                
+                # 如果目标已存在（可能是之前的链接），先删除
+                if os.path.exists(dst_path) or os.path.islink(dst_path):
+                    try:
+                        os.unlink(dst_path)
+                    except IsADirectoryError:
+                        # 如果确实是一个目录而不是软链接（不应该发生，但为了安全）
+                        print(f"⚠️ 警告: 目标路径是一个实际目录，跳过: {dst_path}")
+                        continue
+                
+                try:
+                    os.symlink(src_path, dst_path)
+                    count += 1
+                except Exception as e:
+                    print(f"❌ 创建软链接失败 {sample}: {e}")
+            return count
+
+        # 创建训练集链接
+        t_count = make_links(train_samples, train_root)
+        total_train += t_count
+        
+        # 创建测试集链接
+        v_count = make_links(test_samples, test_root)
+        total_test += v_count
+
+    print(f"\n✅ 数据集划分完成！")
+    print(f"总训练集样本链接数: {total_train}")
+    print(f"总测试集样本链接数: {total_test}")
+
+
+
 
 def check_processed_files():
     """
@@ -122,14 +154,10 @@ def check_processed_files():
                             size_str = f"{file_size / (1024**2):.2f} MB"
                         # print(f" existing: {save_path} (size: {size_str})")
 
-if __name__ == "__main__":
-    # 1. 检查文件 (原有逻辑)
-    # check_processed_files()
-    
-    # 2. 数据集划分示例 (根据需要取消注释运行)
-    # source_dir = Config.RAW_DATA_ROOT
-    # target_dir = source_dir + "-test-dataset-0.1" # 例如: /media/codingma/LLM/data-1005_test_set
-    # split_dataset(source_dir, target_dir, ratio=0.1)
 
-    pass
+if __name__ == "__main__":
+    source_dir = "/media/codingma/LLM/data-1005"
+    target_dir = "/media/codingma/LLM/lcx/Medical_Info_Classification/datasets"
     
+    create_symlink_split(source_dir, target_dir)
+

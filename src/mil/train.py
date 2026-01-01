@@ -2,14 +2,40 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import os
+import gc
 import pandas as pd
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, classification_report
 
 from .config import Config
 from .dataset import MultimodalDataset, collate_fn
 from .model import UnifiedMultimodalModel
+
+def multilabel_categorical_crossentropy(y_pred, y_true):
+    """
+    多标签分类的交叉熵 (ZLPR Loss)
+    Reference: https://spaces.ac.cn/archives/7359
+    y_true: multi-hot vector (0 or 1)
+    y_pred: logits (before sigmoid/softmax)
+    """
+    # 调整 y_pred，使得正例 > 0，负例 < 0
+    y_pred = (1 - 2 * y_true) * y_pred
+    
+    # 构造 log(1 + sum(e^neg)) + log(1 + sum(e^pos))
+    # 使用 1e12 这种大数来 mask 掉不需要的部分
+    y_pred_neg = y_pred - y_true * 1e12
+    y_pred_pos = y_pred - (1 - y_true) * 1e12
+    
+    zeros = torch.zeros_like(y_pred[..., :1])
+    
+    y_pred_neg = torch.cat([y_pred_neg, zeros], dim=-1)
+    y_pred_pos = torch.cat([y_pred_pos, zeros], dim=-1)
+    
+    neg_loss = torch.logsumexp(y_pred_neg, dim=-1)
+    pos_loss = torch.logsumexp(y_pred_pos, dim=-1)
+    
+    return neg_loss + pos_loss
 
 def train():
     # 1. 准备
@@ -73,7 +99,8 @@ def train():
         lr=Config.LEARNING_RATE, 
         weight_decay=Config.WEIGHT_DECAY
     )
-    criterion = nn.CrossEntropyLoss()
+    # [修改] 使用自定义 Multilabel Loss，不需要实例化标准 Loss
+    # criterion = nn.CrossEntropyLoss()
     
     # 混合精度 Scaler
     scaler = torch.amp.GradScaler(device=device.type, enabled=Config.USE_AMP)
@@ -112,7 +139,8 @@ def train():
             # AMP Forward
             with torch.amp.autocast(device_type=device.type, enabled=Config.USE_AMP):
                 logits = model(input_ids, attn_mask, normal_imgs, wsi_feat, wsi_mask)
-                loss = criterion(logits, labels)
+                # [修改] 使用 Multi-label Loss
+                loss = torch.mean(multilabel_categorical_crossentropy(logits, labels))
                 loss = loss / Config.GRAD_ACCUM_STEPS
 
             # AMP Backward
@@ -136,7 +164,8 @@ def train():
             current_loss = loss.item() * Config.GRAD_ACCUM_STEPS
             train_loss += current_loss
             
-            preds = torch.argmax(logits, dim=1)
+            # [修改] 多标签预测: logits > 0 为正类
+            preds = (logits > 0).float()
             train_preds.extend(preds.cpu().numpy())
             train_labels.extend(labels.cpu().numpy())
             
@@ -147,9 +176,21 @@ def train():
                  tqdm.write(log_msg)
                  pbar.set_postfix({'loss': f"{current_loss:.4f}"})
 
+        # [新增] Epoch 结束，清理显存和内存
+        try:
+            del logits, loss, preds, input_ids, attn_mask, normal_imgs, wsi_feat, wsi_mask, labels
+        except NameError:
+            pass # 可能 loop 一次都没进
+        torch.cuda.empty_cache()
+        gc.collect()
+
         # Train Metrics
         train_acc = accuracy_score(train_labels, train_preds)
         avg_train_loss = train_loss / len(train_loader)
+        
+        # [新增] 释放列表以节省内存
+        del train_preds, train_labels
+        gc.collect()
         
         # ================= Validation =================
         model.eval()
@@ -171,10 +212,12 @@ def train():
                 
                 with torch.amp.autocast(device_type=device.type, enabled=Config.USE_AMP):
                     logits = model(input_ids, attn_mask, normal_imgs, wsi_feat, wsi_mask)
-                    loss = criterion(logits, labels)
+                    # [修改] Val Loss
+                    loss = torch.mean(multilabel_categorical_crossentropy(logits, labels))
                 
                 val_loss += loss.item()
-                preds = torch.argmax(logits, dim=1)
+                # [修改] Val Preds
+                preds = (logits > 0).float()
                 val_preds.extend(preds.cpu().numpy())
                 val_labels.extend(labels.cpu().numpy())
         
@@ -182,6 +225,26 @@ def train():
         val_acc = accuracy_score(val_labels, val_preds)
         val_f1 = f1_score(val_labels, val_preds, average='macro')
         avg_val_loss = val_loss / len(val_loader)
+        
+        # [新增] 打印详细的 Classification Report
+        print("\n" + "="*30 + " Validation Report " + "="*30)
+        try:
+            report = classification_report(
+                val_labels, 
+                val_preds, 
+                target_names=Config.TARGET_CLASS_NAMES,
+                zero_division=0,
+                digits=4
+            )
+            print(report)
+        except Exception as e:
+            print(f"Error generating classification report: {e}")
+        print("="*80)
+        
+        # [新增] 清理 Val 临时变量
+        del val_preds, val_labels
+        torch.cuda.empty_cache()
+        gc.collect()
         
         print(f"Results Epoch {epoch+1}:")
         print(f"  Train Loss: {avg_train_loss:.4f} | Train Acc: {train_acc:.4f}")

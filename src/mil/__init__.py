@@ -4,8 +4,8 @@ from .dataset import MultimodalDataset, collate_fn
 from .model import UnifiedMultimodalModel
 from .wsi_processor import extract_wsi_features, get_virchow2_backbone
 from .wsi_processor_fast import extract_wsi_features as extract_wsi_features_fast
-from .utils import split_dataset
-from .offline_feature_prepare import main as offline_feature_prepare
+from .utils import create_symlink_split
+from .offline_feature_prepare import generate_index_file 
 
 __all__ = [
     "Config",
@@ -17,6 +17,6 @@ __all__ = [
     "get_virchow2_backbone",
     "extract_wsi_features",
     "extract_wsi_features_fast",
-    "split_dataset",
-    "offline_feature_prepare",
+    "create_symlink_split",
+    "generate_index_file",
 ]

@@ -19,6 +19,7 @@ class InferencePipeline:
         self.model = UnifiedMultimodalModel().to(self.device)
         
         # 加载权重
+        print(f"Loading checkpoint from {model_checkpoint_path}")
         checkpoint = torch.load(model_checkpoint_path, map_location=self.device)
         # 兼容只保存了 state_dict 的情况，也兼容保存了完整 dict 的情况
         if 'state_dict' in checkpoint:
@@ -52,14 +53,14 @@ class InferencePipeline:
         print("Inference Pipeline Ready!")
 
     def predict(self, text_input: str, image_paths: list, svs_paths: list):
+        # 兼容旧接口，调用新方法
+        return self.predict_proba(text_input, image_paths, svs_paths)
+
+    def predict_proba(self, text_input: str, image_paths: list, svs_paths: list):
         """
-        进行单样本推理
-        Args:
-            text_input: 文本描述字符串
-            image_paths: 普通图片路径列表 ['.jpg', ...]
-            svs_paths: WSI 切片路径列表 ['.svs', ...]
+        进行单样本推理 (多标签)
         Returns:
-            predicted_class_id, probabilities
+            probabilities: numpy array of shape (NumClasses,)
         """
         
         # --- 1. 处理文本 ---
@@ -126,10 +127,11 @@ class InferencePipeline:
             # 使用混合精度推理
             with torch.amp.autocast(self.device.type, enabled=Config.USE_AMP, dtype=torch.float16):
                 logits = self.model(input_ids, attention_mask, normal_imgs, wsi_feat, wsi_mask)
-                probs = torch.softmax(logits, dim=1)
-                pred_idx = torch.argmax(probs, dim=1).item()
                 
-        return pred_idx, probs[0].cpu().numpy()
+                # [修改] 多标签分类使用 Sigmoid
+                probs = torch.sigmoid(logits)
+                
+        return probs[0].cpu().float().numpy()
 
 def main():
     # 示例用法
@@ -147,32 +149,20 @@ def main():
     pipeline = InferencePipeline(checkpoint_path)
 
     # 3. 准备测试数据 (请替换为实际路径)
-    with open("/media/codingma/LLM/lcx/data-1005/已整理-OLK/傅雅婷OLK/傅雅婷+OLK单纯.txt", "r") as f:
-        test_text = f.read()
-    test_images = [
-        #"/media/codingma/LLM/lcx/data-1005/已整理-OLK/傅雅婷OLK/DSC_3503.JPG", 
-    ]
-    test_svs = [
-        #"/media/codingma/LLM/lcx/data-1005/已整理-OLK/傅雅婷OLK/processed/傅雅婷1-中.svs",
-        #"/media/codingma/LLM/lcx/data-1005/已整理-OLK/傅雅婷OLK/processed/傅雅婷2-中.svs",
-    ]
+    test_text = "患者左颊粘膜白色斑纹"
+    test_images = []
+    test_svs = []
 
     print("\nStarting Inference...")
-    pred_idx, probs = pipeline.predict(test_text, test_images, test_svs)
+    probs = pipeline.predict_proba(test_text, test_images, test_svs)
     
     # 4. 输出结果
-    # 反转 CLASS_MAP 获取类别名称
-    idx_to_class = {v: k for k, v in Config.CLASS_MAP.items()}
-    pred_class = idx_to_class.get(pred_idx, "Unknown")
-    
     print("\n================ Results ================")
-    print(f"Predicted Class: {pred_class} (ID: {pred_idx})")
     print("Probabilities:")
     for idx, prob in enumerate(probs):
-        class_name = idx_to_class.get(idx, f"Class {idx}")
+        class_name = Config.TARGET_CLASS_NAMES[idx] if idx < len(Config.TARGET_CLASS_NAMES) else f"Class {idx}"
         print(f"  {class_name}: {prob:.4f}")
     print("=========================================")
 
 if __name__ == "__main__":
     main()
-

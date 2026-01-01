@@ -171,7 +171,37 @@ class MultimodalDataset(Dataset):
             # 如果没有 WSI (或被随机mask掉了)
             wsi_feat = torch.zeros(1, Config.WSI_INPUT_DIM)
 
-        label = torch.tensor(int(row['label']), dtype=torch.long)
+        # ================= Label 处理 (Multi-label) =================
+        # 原始 label 是 CSV 里的 0-7 整数
+        # 映射规则：
+        # 0:OLK -> [0]
+        # 1:OLP -> [1]
+        # 2:OSCC -> [2]
+        # 3:OSF -> [3]
+        # 4:OSF+OLK -> [0, 3] (同时属于OLK和OSF)
+        # 5:乳头状瘤 -> [4]
+        # 6:粘液囊肿 -> [5]
+        # 7:纤维增生 -> [6]
+        
+        old_label = int(row['label'])
+        target = torch.zeros(Config.NUM_CLASSES, dtype=torch.float32)
+        
+        label_mapping = {
+            0: [0],
+            1: [1],
+            2: [2],
+            3: [3],
+            4: [0, 3], # Double label
+            5: [4],
+            6: [5],
+            7: [6]
+        }
+        
+        if old_label in label_mapping:
+            for new_idx in label_mapping[old_label]:
+                target[new_idx] = 1.0
+        
+        label = target
 
         return {
             'input_ids': input_ids,
