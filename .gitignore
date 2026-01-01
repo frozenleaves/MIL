@@ -54,7 +54,6 @@ checkpoints/
 *.ndpi
 *.tiff
 *.tif
-*.png 
 # 排除可能的数据目录，如果以后有的话，目前先保留基本的大文件扩展名
 
 # Cursor
