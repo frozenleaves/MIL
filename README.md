@@ -282,7 +282,7 @@ python inference.py
 
 1. Accuracy
 
-         Test Set Exact Match Accuracy: 0.9133 (137/150) (True sample / Total sample)
+         Test Set Exact Match Accuracy: 0.9133 (137/150) (True sample / Total sample)，下同，不再注释
 
 2. Classification Report
 
@@ -303,7 +303,19 @@ python inference.py
         samples avg     0.9400    0.9567    0.9444       157
     ```
 
-3. 详细结果
+3. Confusion Matrix
+
+      由于是多标签分类问题，无法按照单标签绘制 7x7 的混淆矩阵，因此将其拆分为7个独立的二分问题绘制，下同不再注释。
+
+      ![img](./results/confusion_matrix/txt_img_svs_20260101_163751_multilabel_cm.png)
+
+
+4. ROC曲线
+
+      ![img](./results/roc_plot/txt_img_svs_20260101_163751_multilabel_roc.png)
+
+
+5. 详细结果
 
     <details>
     <summary>点击展开详细推理数据</summary>
@@ -952,7 +964,17 @@ python inference.py
 
     ```
 
-3. 详细结果
+3. Confusion Matrix
+
+      ![img](./results/confusion_matrix/txt_svs_20260101_162704_multilabel_cm.png)
+
+
+4. ROC曲线
+
+      ![img](./results/roc_plot/txt_svs_20260101_162705_multilabel_roc.png)
+
+
+5. 详细结果
 
     <details>
     <summary>点击展开详细推理数据</summary>
@@ -1601,7 +1623,17 @@ python inference.py
      samples avg    0.8400    0.8533    0.8422       157
     ```
 
-3. 详细结果
+3. Confusion Matrix
+
+      ![img](./results/confusion_matrix/txt_img_20260101_163309_multilabel_cm.png)
+
+
+4. ROC曲线
+
+      ![img](./results/roc_plot/txt_img_20260101_163310_multilabel_roc.png)
+
+
+5. 详细结果
 
     <details>
     <summary>点击展开详细推理数据</summary>
@@ -2214,6 +2246,7 @@ python inference.py
 
     </details>
 
+
 #### 测试4
 ----
 测试条件：
@@ -2247,7 +2280,17 @@ python inference.py
      samples avg    0.8100    0.8200    0.8111       157
     ```
 
-3. 详细结果
+3. Confusion Matrix
+
+      ![img](./results/confusion_matrix/txt_20260101_162844_multilabel_cm.png)
+
+
+4. ROC曲线
+
+      ![img](./results/roc_plot/txt_20260101_162844_multilabel_roc.png)
+
+
+5. 详细结果
 
     <details>
     <summary>点击展开详细推理数据</summary>
@@ -2867,7 +2910,7 @@ python inference.py
 
       模型：checkpoints_70_30_multi_label/best_val.pth
 
-      测试数据：照片 + 切片特征
+      测试数据：照片 + 病理切片特征
 
 测试结果：
 
@@ -2894,7 +2937,17 @@ python inference.py
      samples avg    0.8233    0.8367    0.8244       157
     ```
 
-3. 详细结果
+3. Confusion Matrix
+
+      ![img](./results/confusion_matrix/img_svs_20260101_164317_multilabel_cm.png)
+
+
+4. ROC曲线
+
+      ![img](./results/roc_plot/img_svs_20260101_164318_multilabel_roc.png)
+
+
+5. 详细结果
 
     <details>
     <summary>点击展开详细推理数据</summary>
@@ -3541,7 +3594,17 @@ python inference.py
      samples avg    0.3267    0.3233    0.3244       157
     ```
 
-3. 详细结果
+3. Confusion Matrix
+
+      ![img](./results/confusion_matrix/img_20260101_164710_multilabel_cm.png)
+
+
+4. ROC曲线
+
+      ![img](./results/roc_plot/img_20260101_164711_multilabel_roc.png)
+
+
+5. 详细结果
 
     <details>
     <summary>点击展开详细推理数据</summary>
@@ -4187,7 +4250,17 @@ python inference.py
      samples avg    0.8500    0.8500    0.8444       157
     ```
 
-3. 详细结果
+3. Confusion Matrix
+
+      ![img](./results/confusion_matrix/svs_20260101_164807_multilabel_cm.png)
+
+
+4. ROC曲线
+
+      ![img](./results/roc_plot/svs_20260101_164807_multilabel_roc.png)
+
+
+5. 详细结果
 
     <details>
     <summary>点击展开详细推理数据</summary>

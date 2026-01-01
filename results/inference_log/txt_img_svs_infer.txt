@@ -635,4 +635,36 @@ weighted avg     0.9297    0.9554    0.9416       157
  samples avg     0.9400    0.9567    0.9444       157
 
 
-ROC curve saved to results/roc_plot/txt_img_svs__20260101_153720_multilabel_roc.png
+Multilabel Confusion Matrix:
+
+Class: OLK
+[[119   3]
+ [  3  25]]
+
+Class: OLP
+[[103   3]
+ [  2  42]]
+
+Class: OSCC
+[[124   1]
+ [  1  24]]
+
+Class: OSF
+[[135   4]
+ [  1  10]]
+
+Class: 乳头状瘤
+[[141   0]
+ [  0   9]]
+
+Class: 粘液囊肿
+[[124   1]
+ [  0  25]]
+
+Class: 纤维增生
+[[135   0]
+ [  0  15]]
+
+Confusion Matrix Heatmap saved to results/confusion_matrix/txt_img_svs_20260101_163751_multilabel_cm.png
+
+ROC curve saved to results/roc_plot/txt_img_svs_20260101_163751_multilabel_roc.png

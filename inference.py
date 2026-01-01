@@ -190,6 +190,64 @@ def evaluate_test_set(test_root, ckpt_path=None, use_txt=True, use_img=True, use
     except Exception as e:
         print(f"Error generating report: {e}")
     
+    # [新增] 混淆矩阵计算与绘制
+    print("\nMultilabel Confusion Matrix:")
+    try:
+        mcm = multilabel_confusion_matrix(y_true, y_pred)
+        for i, class_name in enumerate(Config.TARGET_CLASS_NAMES):
+            print(f"\nClass: {class_name}")
+            print(mcm[i])
+        
+        # 绘制混淆矩阵热力图 (7个类别的 2x2 矩阵)
+        # 布局：2行4列 (最后一个位置留空)
+        fig, axes = plt.subplots(2, 4, figsize=(20, 10), dpi=300)
+        axes = axes.flatten()
+        
+        for i, class_name in enumerate(Config.TARGET_CLASS_NAMES):
+            ax = axes[i]
+            cm = mcm[i]
+            
+            # 绘制热力图 (使用 imshow)
+            im = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+            
+            # 添加数值标签
+            thresh = cm.max() / 2.
+            for r in range(cm.shape[0]):
+                for c in range(cm.shape[1]):
+                    ax.text(c, r, format(cm[r, c], 'd'),
+                            ha="center", va="center",
+                            color="white" if cm[r, c] > thresh else "black",
+                            fontsize=12)
+            
+            # 设置坐标轴标签
+            ax.set_title(f'Confusion Matrix - {class_name}')
+            ax.set_ylabel('True Label')
+            ax.set_xlabel('Predicted Label')
+            ax.set_xticks([0, 1])
+            ax.set_yticks([0, 1])
+            ax.set_xticklabels(['False', 'True'])
+            ax.set_yticklabels(['False', 'True'])
+            
+        # 隐藏多余的子图
+        for j in range(len(Config.TARGET_CLASS_NAMES), len(axes)):
+            axes[j].axis('off')
+            
+        plt.tight_layout()
+        
+        # 构建保存路径
+        ft = 'txt_' if use_txt else ''
+        fi = 'img_' if use_img else ''
+        fs = 'svs_' if use_svs else ''
+        cm_save_path = f"results/confusion_matrix/{ft}{fi}{fs}{time.strftime('%Y%m%d_%H%M%S')}_multilabel_cm.png"
+        
+        os.makedirs(os.path.dirname(cm_save_path), exist_ok=True)
+        plt.savefig(cm_save_path)
+        print(f"\nConfusion Matrix Heatmap saved to {cm_save_path}")
+        plt.close()
+        
+    except Exception as e:
+        print(f"Error plotting confusion matrix: {e}")
+
     # 6. 绘制 ROC 曲线
     n_classes = y_true.shape[1]
     
@@ -241,7 +299,7 @@ def evaluate_test_set(test_root, ckpt_path=None, use_txt=True, use_img=True, use
     fi = 'img_' if use_img else ''
     fs = 'svs_' if use_svs else ''
     
-    save_path = f"results/roc_plot/{ft}{fi}{fs}_{time.strftime('%Y%m%d_%H%M%S')}_multilabel_roc.png"
+    save_path = f"results/roc_plot/{ft}{fi}{fs}{time.strftime('%Y%m%d_%H%M%S')}_multilabel_roc.png"
     if roc_save_path: save_path = roc_save_path
     
     # Ensure results dir exists
@@ -254,4 +312,4 @@ def evaluate_test_set(test_root, ckpt_path=None, use_txt=True, use_img=True, use
 if __name__ == "__main__":
     test_root = "/media/codingma/LLM/lcx/Medical_Info_Classification/datasets/test"
     ckpt_path = "/media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints_70_30_multi_label/best_val.pth"
-    evaluate_test_set(test_root, ckpt_path=ckpt_path, use_txt=True, use_img=False, use_svs=True, enable_fallback=True)
+    evaluate_test_set(test_root, ckpt_path=ckpt_path, use_txt=True, use_img=True , use_svs=True, enable_fallback=True)
