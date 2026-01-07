@@ -4891,21 +4891,21 @@ python inference.py
 
 2. Classification Report
     ```shell
-Classification Report:
-              precision    recall  f1-score   support
+      Classification Report:
+                  precision    recall  f1-score   support
 
-         OLK        0.6765    0.8214    0.7419        28
-         OLP        0.8409    0.8409    0.8409        44
-        OSCC        0.8000    0.8000    0.8000        25
-         OSF        0.7500    0.8182    0.7826        11
-        乳头状瘤     1.0000    0.6667    0.8000         9
-        粘液囊肿     0.9615    1.0000    0.9804        25
-        纤维增生     0.7500    0.8000    0.7742        15
+            OLK        0.6765    0.8214    0.7419        28
+            OLP        0.8409    0.8409    0.8409        44
+            OSCC       0.8000    0.8000    0.8000        25
+            OSF        0.7500    0.8182    0.7826        11
+         乳头状瘤       1.0000    0.6667    0.8000         9
+         粘液囊肿       0.9615    1.0000    0.9804        25
+         纤维增生       0.7500    0.8000    0.7742        15
 
-   micro avg        0.8098    0.8408    0.8250       157
-   macro avg        0.8256    0.8210    0.8171       157
-weighted avg        0.8183    0.8408    0.8262       157
- samples avg        0.8267    0.8400    0.8289       157
+      micro avg        0.8098    0.8408    0.8250       157
+      macro avg        0.8256    0.8210    0.8171       157
+      weighted avg     0.8183    0.8408    0.8262       157
+      samples avg      0.8267    0.8400    0.8289       157
     ```
 
 
