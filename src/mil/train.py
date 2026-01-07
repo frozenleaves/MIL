@@ -63,12 +63,18 @@ def train():
     train_dataset = MultimodalDataset(
         train_df, 
         mode='train',
-        expand_factor=Config.DATA_EXPAND_FACTOR
+        expand_factor=Config.DATA_EXPAND_FACTOR,
+        use_txt=Config.USE_TXT,
+        use_img=Config.USE_IMG,
+        use_svs=Config.USE_SVS
     )
     # 验证集：不扩充
     val_dataset = MultimodalDataset(
         val_df, 
-        mode='val'
+        mode='val',
+        use_txt=Config.USE_TXT,
+        use_img=Config.USE_IMG,
+        use_svs=Config.USE_SVS
     )
     
     train_loader = DataLoader(
@@ -140,7 +146,8 @@ def train():
             with torch.amp.autocast(device_type=device.type, enabled=Config.USE_AMP):
                 logits = model(input_ids, attn_mask, normal_imgs, wsi_feat, wsi_mask)
                 # [修改] 使用 Multi-label Loss
-                loss = torch.mean(multilabel_categorical_crossentropy(logits, labels))
+                # Loss 计算强制使用 float32 避免数值溢出
+                loss = torch.mean(multilabel_categorical_crossentropy(logits.float(), labels.float()))
                 loss = loss / Config.GRAD_ACCUM_STEPS
 
             # AMP Backward
@@ -213,7 +220,8 @@ def train():
                 with torch.amp.autocast(device_type=device.type, enabled=Config.USE_AMP):
                     logits = model(input_ids, attn_mask, normal_imgs, wsi_feat, wsi_mask)
                     # [修改] Val Loss
-                    loss = torch.mean(multilabel_categorical_crossentropy(logits, labels))
+                    # Loss 计算强制使用 float32 避免数值溢出
+                    loss = torch.mean(multilabel_categorical_crossentropy(logits.float(), labels.float()))
                 
                 val_loss += loss.item()
                 # [修改] Val Preds

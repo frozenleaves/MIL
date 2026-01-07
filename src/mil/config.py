@@ -58,7 +58,7 @@ class Config:
 
     # ================= 训练参数 =================
     # 权重保存目录
-    CHECKPOINT_DIR = "/media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints"
+    CHECKPOINT_DIR = "/media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints-txt_only"
     
     # [模型容量配置]
     FUSION_DIM = 768       # 512 -> 768 (增大维度)
@@ -85,3 +85,8 @@ class Config:
 
     DEVICE = "cuda"
     USE_AMP = True
+
+    # [模态开关]
+    USE_TXT = True
+    USE_IMG = False
+    USE_SVS = False

@@ -1,9 +1,8 @@
-Warning: Best checkpoint not found at /media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints/best_val.pth, trying last.pth
 Initializing Inference Pipeline...
 Loading Main Multimodal Model...
 Loading Text Model: /media/codingma/LLM/lcx/Qwen3-Embedding-0.6B...
 Loading Image Model: ResNet101...
-Loading checkpoint from /media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints_70_30_multi_label/best_val.pth
+Loading checkpoint from /media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints-txt_only/best_val.pth
 Initializing Text Processor...
 Initializing Normal Image Processor...
 Initializing Virchow2 for WSI...
@@ -13,49 +12,49 @@ Scanning test dataset at /media/codingma/LLM/lcx/Medical_Info_Classification/dat
 Found 150 test samples.
 
 Starting Inference Loop...
-✅ (Fallback) 严云荣OLK16龈缘单纯OLK
+❌ 严云荣OLK16龈缘单纯OLK
    True: ['OLK']
-   Pred: ['OLK']
+   Pred: ['OLP']
 ------------------------------
 ✅ 何建国 OLK
    True: ['OLK']
    Pred: ['OLK']
 ------------------------------
-❌ 傅雅婷OLK
-   True: ['OLK']
-   Pred: ['OLP']
-------------------------------
-❌ 刘丽斌OLK单纯
-   True: ['OLK']
-   Pred: ['OLP']
-------------------------------
-❌ 周建兰OLK
-   True: ['OLK']
-   Pred: ['OLK', 'OLP']
-------------------------------
-❌ 周志权 OLK
-   True: ['OLK']
-   Pred: ['OLK', 'OSF']
-------------------------------
-❌ 孟建忠-44OLK轻中度异常-46OLK单纯增生
-   True: ['OLK']
-   Pred: ['OLP']
-------------------------------
-❌ 方成OLK
-   True: ['OLK']
-   Pred: ['OLP']
-------------------------------
-✅ (Fallback) 施雅琴OLK
+✅ 傅雅婷OLK
    True: ['OLK']
    Pred: ['OLK']
 ------------------------------
-❌ (Fallback) 曾金仙OLK
+✅ 刘丽斌OLK单纯
    True: ['OLK']
-   Pred: ['乳头状瘤']
+   Pred: ['OLK']
 ------------------------------
-❌ 朱伟清 OLK
+✅ 周建兰OLK
    True: ['OLK']
-   Pred: ['OLK', 'OSF']
+   Pred: ['OLK']
+------------------------------
+❌ 周志权 OLK
+   True: ['OLK']
+   Pred: ['OLP', 'OSF']
+------------------------------
+✅ 孟建忠-44OLK轻中度异常-46OLK单纯增生
+   True: ['OLK']
+   Pred: ['OLK']
+------------------------------
+✅ 方成OLK
+   True: ['OLK']
+   Pred: ['OLK']
+------------------------------
+✅ 施雅琴OLK
+   True: ['OLK']
+   Pred: ['OLK']
+------------------------------
+✅ 曾金仙OLK
+   True: ['OLK']
+   Pred: ['OLK']
+------------------------------
+✅ 朱伟清 OLK
+   True: ['OLK']
+   Pred: ['OLK']
 ------------------------------
 ✅ 李光明OLK-舌背单纯-左颊轻度异常
    True: ['OLK']
@@ -63,129 +62,41 @@ Starting Inference Loop...
 ------------------------------
 ❌ 李建鹏OLK单纯
    True: ['OLK']
-   Pred: ['OLK', 'OSF']
+   Pred: ['OLP']
 ------------------------------
-❌ 李文忠OLK单纯
+✅ 李文忠OLK单纯
    True: ['OLK']
-   Pred: ['OLK', 'OSF']
+   Pred: ['OLK']
 ------------------------------
 ✅ 李昌荣OLK左颊单纯
    True: ['OLK']
    Pred: ['OLK']
 ------------------------------
-✅ 沈德章 多发OLK-左颊及舌背单纯
-   True: ['OLK']
-   Pred: ['OLK']
-------------------------------
-❌ (Fallback) 洪峰OLK
-   True: ['OLK']
-   Pred: ['乳头状瘤']
-------------------------------
-❌ 赵柠禾 OLK
+❌ 沈德章 多发OLK-左颊及舌背单纯
    True: ['OLK']
    Pred: ['OLP']
+------------------------------
+❌ 洪峰OLK
+   True: ['OLK']
+   Pred: ['OLP']
+------------------------------
+✅ 赵柠禾 OLK
+   True: ['OLK']
+   Pred: ['OLK']
 ------------------------------
 ✅ 赵秀英-OLK
    True: ['OLK']
    Pred: ['OLK']
 ------------------------------
-❌ (Fallback) 阮桂良-牙龈OLK-牙龈单纯增生
-   True: ['OLK']
-   Pred: ['乳头状瘤']
-------------------------------
-✅ 魏少坚OLK
+✅ 阮桂良-牙龈OLK-牙龈单纯增生
    True: ['OLK']
    Pred: ['OLK']
 ------------------------------
+❌ 魏少坚OLK
+   True: ['OLK']
+   Pred: ['OLK', 'OSF']
+------------------------------
 ✅ 江清娣 OLP 限于左颊
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ (Fallback) 王振 OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 王斌OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 王春连
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 王来信 OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 祝星星 OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 秦仙 糜烂型OLP-病理倾向OLP伴糜烂
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 胡雪 OLP单纯
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 苏潇OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 茅丽庆OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 葛煜洲 舌背单发OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 蒋晓徐 OLP斑纹-病理OLP伴OSF
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 赵一峰 舌背OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 邢小英 右颊OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 郑淑敏 OLP糜烂
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 郑益斌OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 阮志明OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 陆桂花 梅毒 OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 陈孟OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 陈玉婵 OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 陈青燕 OLP斑纹
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 颜安君OLP
-   True: ['OLP']
-   Pred: ['OLP']
-------------------------------
-✅ 龚金菊OLP
    True: ['OLP']
    Pred: ['OLP']
 ------------------------------
@@ -253,9 +164,9 @@ Starting Inference Loop...
    True: ['OLP']
    Pred: ['OLP']
 ------------------------------
-✅ 来婉尔 OLP
+❌ (Fallback) 来婉尔 OLP
    True: ['OLP']
-   Pred: ['OLP']
+   Pred: ['OSCC']
 ------------------------------
 ✅ 杨忠梅 OLP
    True: ['OLP']
@@ -273,6 +184,94 @@ Starting Inference Loop...
    True: ['OLP']
    Pred: ['OLP']
 ------------------------------
+✅ 王振 OLP
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+❌ 王斌OLP
+   True: ['OLP']
+   Pred: ['OLK']
+------------------------------
+✅ 王春连
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+❌ 王来信 OLP
+   True: ['OLP']
+   Pred: ['OSCC']
+------------------------------
+❌ 祝星星 OLP
+   True: ['OLP']
+   Pred: ['OLK']
+------------------------------
+✅ 秦仙 糜烂型OLP-病理倾向OLP伴糜烂
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+❌ (Fallback) 胡雪 OLP单纯
+   True: ['OLP']
+   Pred: ['OSCC']
+------------------------------
+✅ 苏潇OLP
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+✅ 茅丽庆OLP
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+✅ 葛煜洲 舌背单发OLP
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+✅ 蒋晓徐 OLP斑纹-病理OLP伴OSF
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+✅ 赵一峰 舌背OLP
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+✅ 邢小英 右颊OLP
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+✅ 郑淑敏 OLP糜烂
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+✅ 郑益斌OLP
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+❌ 阮志明OLP
+   True: ['OLP']
+   Pred: ['OSCC']
+------------------------------
+✅ 陆桂花 梅毒 OLP
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+❌ 陈孟OLP
+   True: ['OLP']
+   Pred: ['OLK', 'OSF']
+------------------------------
+✅ 陈玉婵 OLP
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+✅ 陈青燕 OLP斑纹
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+✅ 颜安君OLP
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
+✅ 龚金菊OLP
+   True: ['OLP']
+   Pred: ['OLP']
+------------------------------
 ✅ 丁俊华CA
    True: ['OSCC']
    Pred: ['OSCC']
@@ -281,9 +280,9 @@ Starting Inference Loop...
    True: ['OSCC']
    Pred: ['OSCC']
 ------------------------------
-✅ 傅春凤CA
+❌ 傅春凤CA
    True: ['OSCC']
-   Pred: ['OSCC']
+   Pred: ['OLK']
 ------------------------------
 ✅ 冯静CA
    True: ['OSCC']
@@ -309,13 +308,13 @@ Starting Inference Loop...
    True: ['OSCC']
    Pred: ['OSCC']
 ------------------------------
-✅ 朱显玮OSCC
+❌ 朱显玮OSCC
    True: ['OSCC']
-   Pred: ['OSCC']
+   Pred: ['OLK']
 ------------------------------
-✅ 李康-OSCC
+❌ 李康-OSCC
    True: ['OSCC']
-   Pred: ['OSCC']
+   Pred: ['OLP']
 ------------------------------
 ✅ 杨小红-病理原位癌可疑早期浸润
    True: ['OSCC']
@@ -329,9 +328,9 @@ Starting Inference Loop...
    True: ['OSCC']
    Pred: ['OSCC']
 ------------------------------
-✅ 王君全OSCC-右下牙龈鳞状细胞癌
+❌ 王君全OSCC-右下牙龈鳞状细胞癌
    True: ['OSCC']
-   Pred: ['OSCC']
+   Pred: ['OLK']
 ------------------------------
 ✅ 王炎根-OSCC左颊
    True: ['OSCC']
@@ -341,9 +340,9 @@ Starting Inference Loop...
    True: ['OSCC']
    Pred: ['OSCC']
 ------------------------------
-❌ (Fallback) 范卫科—中重度上皮异常增生）
+❌ 范卫科—中重度上皮异常增生）
    True: ['OSCC']
-   Pred: ['OLK']
+   Pred: ['OLP']
 ------------------------------
 ✅ 董春杰 右颊创溃局部原位癌变 Ca
    True: ['OSCC']
@@ -361,13 +360,13 @@ Starting Inference Loop...
    True: ['OSCC']
    Pred: ['OSCC']
 ------------------------------
-❌ 陈金凤 右舌腹白斑原位癌变—
+✅ 陈金凤 右舌腹白斑原位癌变—
    True: ['OSCC']
-   Pred: ['OLK']
+   Pred: ['OSCC']
 ------------------------------
-❌ 陈革林-左颊OSCC
+✅ 陈革林-左颊OSCC
    True: ['OSCC']
-   Pred: ['OLP', 'OSCC']
+   Pred: ['OSCC']
 ------------------------------
 ✅ 顾华康OSCC
    True: ['OSCC']
@@ -375,19 +374,19 @@ Starting Inference Loop...
 ------------------------------
 ❌ 吴立芳 OSF
    True: ['OSF']
-   Pred: ['粘液囊肿']
+   Pred: ['OLK', 'OSF']
 ------------------------------
-✅ (Fallback) 胡军仙OSF
+❌ 胡军仙OSF
    True: ['OSF']
-   Pred: ['OSF']
+   Pred: ['OLK', 'OSF']
 ------------------------------
 ❌ 谢忠杰 OSF
    True: ['OSF']
-   Pred: ['OLP']
+   Pred: ['OLK', 'OSF']
 ------------------------------
 ❌ 高正男OSF
    True: ['OSF']
-   Pred: ['OLP']
+   Pred: ['OLK', 'OSF']
 ------------------------------
 ❌ 吴昊临床OLK-病理显示OLK+OSF
    True: ['OLK', 'OSF']
@@ -397,37 +396,37 @@ Starting Inference Loop...
    True: ['OLK', 'OSF']
    Pred: ['OLK', 'OSF']
 ------------------------------
-❌ 李援OLK-何虹患者-病理OSF伴单纯OLK
+✅ 李援OLK-何虹患者-病理OSF伴单纯OLK
    True: ['OLK', 'OSF']
-   Pred: ['OLK']
+   Pred: ['OLK', 'OSF']
 ------------------------------
 ❌ 柳振方 OSF+OLK
    True: ['OLK', 'OSF']
    Pred: ['OLK']
 ------------------------------
-❌ 江超超-病理左口角OSF伴OLK轻度异常-右口角-OSF伴OLK
+✅ 江超超-病理左口角OSF伴OLK轻度异常-右口角-OSF伴OLK
    True: ['OLK', 'OSF']
-   Pred: ['OLP']
+   Pred: ['OLK', 'OSF']
 ------------------------------
-❌ (Fallback) 邵小明-病理颊OSF伴OLK单纯增生-舌OSF伴OLK轻度异常
+✅ 邵小明-病理颊OSF伴OLK单纯增生-舌OSF伴OLK轻度异常
    True: ['OLK', 'OSF']
-   Pred: ['OLP']
+   Pred: ['OLK', 'OSF']
 ------------------------------
 ✅ 马雪地-OSF-左颊白斑伴OSF
    True: ['OLK', 'OSF']
    Pred: ['OLK', 'OSF']
 ------------------------------
-✅ 傅则建 乳头状瘤
-   True: ['乳头状瘤']
-   Pred: ['乳头状瘤']
-------------------------------
-❌ (Fallback) 吴德伟鳞状细胞乳头状瘤
+❌ 傅则建 乳头状瘤
    True: ['乳头状瘤']
    Pred: ['纤维增生']
 ------------------------------
-✅ 张玉红鳞状细胞乳头状瘤
+✅ 吴德伟鳞状细胞乳头状瘤
    True: ['乳头状瘤']
    Pred: ['乳头状瘤']
+------------------------------
+❌ 张玉红鳞状细胞乳头状瘤
+   True: ['乳头状瘤']
+   Pred: ['纤维增生']
 ------------------------------
 ✅ 徐红慧 乳头状瘤
    True: ['乳头状瘤']
@@ -441,25 +440,25 @@ Starting Inference Loop...
    True: ['乳头状瘤']
    Pred: ['乳头状瘤']
 ------------------------------
-✅ (Fallback) 王富珍 腭部乳头状瘤
+✅ 王富珍 腭部乳头状瘤
    True: ['乳头状瘤']
    Pred: ['乳头状瘤']
 ------------------------------
-✅ 袁丙丙 -鳞状细胞乳头状增生
+❌ 袁丙丙 -鳞状细胞乳头状增生
+   True: ['乳头状瘤']
+   Pred: ['纤维增生']
+------------------------------
+✅ 黄涛 腭部乳头状瘤
    True: ['乳头状瘤']
    Pred: ['乳头状瘤']
-------------------------------
-❌ (Fallback) 黄涛 腭部乳头状瘤
-   True: ['乳头状瘤']
-   Pred: ['粘液囊肿']
 ------------------------------
 ✅ 俞亦鸿-病理粘液囊肿
    True: ['粘液囊肿']
    Pred: ['粘液囊肿']
 ------------------------------
-❌ (Fallback) 俞健成 下唇内侧包块待诊（粘液腺囊肿？）
+✅ 俞健成 下唇内侧包块待诊（粘液腺囊肿？）
    True: ['粘液囊肿']
-   Pred: ['乳头状瘤']
+   Pred: ['粘液囊肿']
 ------------------------------
 ✅ 俞铭扬 黏液囊肿
    True: ['粘液囊肿']
@@ -481,7 +480,7 @@ Starting Inference Loop...
    True: ['粘液囊肿']
    Pred: ['粘液囊肿']
 ------------------------------
-✅ (Fallback) 周丹璐囊肿
+✅ 周丹璐囊肿
    True: ['粘液囊肿']
    Pred: ['粘液囊肿']
 ------------------------------
@@ -493,9 +492,9 @@ Starting Inference Loop...
    True: ['粘液囊肿']
    Pred: ['粘液囊肿']
 ------------------------------
-❌ (Fallback) 徐乐琪 左颊后份黏液囊肿（病理确认）
+✅ 徐乐琪 左颊后份黏液囊肿（病理确认）
    True: ['粘液囊肿']
-   Pred: ['OLP']
+   Pred: ['粘液囊肿']
 ------------------------------
 ✅ 徐晓康粘液囊肿
    True: ['粘液囊肿']
@@ -505,17 +504,17 @@ Starting Inference Loop...
    True: ['粘液囊肿']
    Pred: ['粘液囊肿']
 ------------------------------
-✅ (Fallback) 林倢jie仪 黏液囊肿
+✅ 林倢jie仪 黏液囊肿
    True: ['粘液囊肿']
    Pred: ['粘液囊肿']
 ------------------------------
-❌ 田鑫 粘液囊肿
-   True: ['粘液囊肿']
-   Pred: ['OSCC']
-------------------------------
-✅ 石建琪 左颊下份黏液囊肿
+✅ 田鑫 粘液囊肿
    True: ['粘液囊肿']
    Pred: ['粘液囊肿']
+------------------------------
+❌ 石建琪 左颊下份黏液囊肿
+   True: ['粘液囊肿']
+   Pred: ['粘液囊肿', '纤维增生']
 ------------------------------
 ✅ 祝千逸 黏液囊肿
    True: ['粘液囊肿']
@@ -557,15 +556,15 @@ Starting Inference Loop...
    True: ['纤维增生']
    Pred: ['纤维增生']
 ------------------------------
-✅ (Fallback) 单宇辰 右舌缘刺激性纤维增生
+✅ 单宇辰 右舌缘刺激性纤维增生
    True: ['纤维增生']
    Pred: ['纤维增生']
 ------------------------------
 ❌ (Fallback) 孙徐杰-舌背病理单纯OLK
    True: ['纤维增生']
-   Pred: ['乳头状瘤']
+   Pred: ['OSCC']
 ------------------------------
-✅ (Fallback) 张春书-病理舌尖局限性纤维组织增生
+✅ 张春书-病理舌尖局限性纤维组织增生
    True: ['纤维增生']
    Pred: ['纤维增生']
 ------------------------------
@@ -581,9 +580,9 @@ Starting Inference Loop...
    True: ['纤维增生']
    Pred: ['纤维增生']
 ------------------------------
-❌ (Fallback) 李威 刺激性纤维增生（智齿相关）
+✅ 李威 刺激性纤维增生（智齿相关）
    True: ['纤维增生']
-   Pred: ['OLP']
+   Pred: ['纤维增生']
 ------------------------------
 ✅ 杨梦瑶 舌缘刺激性纤维增生？
    True: ['纤维增生']
@@ -601,9 +600,9 @@ Starting Inference Loop...
    True: ['纤维增生']
    Pred: ['纤维增生']
 ------------------------------
-❌ (Fallback) 陆安永 OLL伴左颊刺激性纤维增生（智齿相关）
+❌ 陆安永 OLL伴左颊刺激性纤维增生（智齿相关）
    True: ['纤维增生']
-   Pred: ['OLP']
+   Pred: ['OLK']
 ------------------------------
 ✅ 陈沚涵纤维组织增生
    True: ['纤维增生']
@@ -611,60 +610,60 @@ Starting Inference Loop...
 ------------------------------
 ❌ 高雨薇 纤维组织增生
    True: ['纤维增生']
-   Pred: ['OSF', '纤维增生']
+   Pred: ['粘液囊肿']
 ------------------------------
 
 ==================================================
-Test Set Exact Match Accuracy: 0.7800 (117/150)
+Test Set Exact Match Accuracy: 0.7933 (119/150)
 ==================================================
 
 Classification Report:
               precision    recall  f1-score   support
 
-         OLK     0.9000    0.6429    0.7500        28
-         OLP     0.7586    1.0000    0.8627        44
-        OSCC     0.9583    0.9200    0.9388        25
-         OSF     0.3750    0.2727    0.3158        11
-        乳头状瘤     0.5833    0.7778    0.6667         9
-        粘液囊肿     0.9167    0.8800    0.8980        25
-        纤维增生     0.9231    0.8000    0.8571        15
+         OLK     0.6765    0.8214    0.7419        28
+         OLP     0.8409    0.8409    0.8409        44
+        OSCC     0.8000    0.8000    0.8000        25
+         OSF     0.7500    0.8182    0.7826        11
+        乳头状瘤     1.0000    0.6667    0.8000         9
+        粘液囊肿     0.9615    1.0000    0.9804        25
+        纤维增生     0.7500    0.8000    0.7742        15
 
-   micro avg     0.8113    0.8217    0.8165       157
-   macro avg     0.7736    0.7562    0.7556       157
-weighted avg     0.8196    0.8217    0.8103       157
- samples avg     0.8233    0.8367    0.8244       157
+   micro avg     0.8098    0.8408    0.8250       157
+   macro avg     0.8256    0.8210    0.8171       157
+weighted avg     0.8183    0.8408    0.8262       157
+ samples avg     0.8267    0.8400    0.8289       157
 
 
 Multilabel Confusion Matrix:
 
 Class: OLK
-[[120   2]
- [ 10  18]]
+[[111  11]
+ [  5  23]]
 
 Class: OLP
-[[92 14]
- [ 0 44]]
+[[99  7]
+ [ 7 37]]
 
 Class: OSCC
-[[124   1]
- [  2  23]]
+[[120   5]
+ [  5  20]]
 
 Class: OSF
-[[134   5]
- [  8   3]]
+[[136   3]
+ [  2   9]]
 
 Class: 乳头状瘤
-[[136   5]
- [  2   7]]
+[[141   0]
+ [  3   6]]
 
 Class: 粘液囊肿
-[[123   2]
- [  3  22]]
+[[124   1]
+ [  0  25]]
 
 Class: 纤维增生
-[[134   1]
+[[131   4]
  [  3  12]]
 
-Confusion Matrix Heatmap saved to results/confusion_matrix/img_svs_20260101_164317_multilabel_cm.png
+Confusion Matrix Heatmap saved to results/confusion_matrix/txt_only/txt_20260107_144608_multilabel_cm.png
 
-ROC curve saved to results/roc_plot/img_svs_20260101_164318_multilabel_roc.png
+ROC curve saved to results/roc_plot/txt_only/txt_20260107_144609_multilabel_roc.png
