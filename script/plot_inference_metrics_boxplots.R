@@ -1,7 +1,7 @@
 args <- commandArgs(trailingOnly = TRUE)
 
-in_csv <- if (length(args) >= 1) args[[1]] else "inference_metrics.csv"
-out_png <- if (length(args) >= 2) args[[2]] else "inference_metrics_boxplots.png"
+in_csv <- "C:/Users/frozen/Desktop/20260113实验需求/MIL/script/inference_metrics.csv"
+out_dir <- "C:/Users/frozen/Desktop/20260113实验需求/MIL/script/figures/inference_metrics_plots"
 
 if (!file.exists(in_csv)) {
   stop(paste("Input CSV not found:", in_csv))
@@ -35,9 +35,14 @@ metrics_map <- list(
   recall = list(overall = "recall_macro", suffix = "_recall"),
   f1 = list(overall = "f1_macro", suffix = "_f1")
 )
+metric_labels <- c(
+  acc = "Accuracy",
+  precision = "Precision",
+  recall = "Recall",
+  f1 = "F1"
+)
 
 class_long_list <- list()
-overall_list <- list()
 
 for (m in names(metrics_map)) {
   suffix <- metrics_map[[m]]$suffix
@@ -58,20 +63,10 @@ for (m in names(metrics_map)) {
     ) %>%
     select(checkpoint_label, metric, class, value)
 
-  overall <- df %>%
-    select(checkpoint_label, all_of(overall_col)) %>%
-    rename(overall = all_of(overall_col)) %>%
-    mutate(
-      metric = m,
-      overall = as.numeric(overall)
-    )
-
   class_long_list[[m]] <- class_long
-  overall_list[[m]] <- overall
 }
 
 class_long_df <- bind_rows(class_long_list)
-overall_df <- bind_rows(overall_list)
 
 if (nrow(class_long_df) == 0) {
   stop("No per-class metrics found to plot.")
@@ -84,26 +79,111 @@ checkpoint_levels <- df %>%
   unique()
 
 class_long_df$checkpoint_label <- factor(class_long_df$checkpoint_label, levels = checkpoint_levels)
-overall_df$checkpoint_label <- factor(overall_df$checkpoint_label, levels = checkpoint_levels)
+checkpoint_sizes <- df %>%
+  mutate(train_size_num = suppressWarnings(as.numeric(train_size))) %>%
+  select(checkpoint_label, train_size_num)
+size_lookup <- checkpoint_sizes$train_size_num[match(checkpoint_levels, checkpoint_sizes$checkpoint_label)]
+max_size <- max(size_lookup, na.rm = TRUE)
+percent_labels <- if (is.finite(max_size)) {
+  pct <- round((size_lookup / max_size) * 100 / 10) * 10
+  pct[is.na(pct)] <- ""
+  paste0(pct, "%")
+} else {
+  rep("", length(checkpoint_levels))
+}
 
-p <- ggplot(class_long_df, aes(x = checkpoint_label, y = value, group = checkpoint_label)) +
-  geom_boxplot(outlier.shape = NA, width = 0.6, alpha = 0.6) +
-  geom_jitter(width = 0.15, size = 1.4, alpha = 0.8) +
-  geom_errorbar(
-    data = overall_df,
-    aes(ymin = overall, ymax = overall),
-    width = 0.5,
-    color = "red",
-    size = 0.6
-  ) +
-  facet_wrap(~metric, scales = "free_y", ncol = 2) +
-  labs(
-    x = "Train size",
-    y = "Metric value",
-    title = "Per-class Metrics with Overall Reference"
-  ) +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+if (!dir.exists(out_dir)) {
+  dir.create(out_dir, recursive = TRUE)
+}
 
-ggsave(out_png, plot = p, width = 10, height = 6, dpi = 200)
-cat("Saved plot:", out_png, "\n")
+for (m in unique(class_long_df$metric)) {
+  df_m <- class_long_df %>% filter(metric == m)
+  if (nrow(df_m) == 0) {
+    next
+  }
+
+  p <- ggplot(df_m, aes(x = checkpoint_label, y = value, group = checkpoint_label)) +
+    geom_boxplot(outlier.shape = NA, width = 0.6, fill = "#6baed6", color = "#2166ac") +
+    geom_jitter(width = 0.15, size = 1.4, alpha = 0.8, color = "#1b4f72") +
+    labs(
+      x = "Train size",
+      y = metric_labels[[m]]
+    ) +
+    scale_x_discrete(labels = percent_labels) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
+
+  out_png <- file.path(out_dir, paste0("boxplot_", m, ".png"))
+  ggsave(out_png, plot = p, width = 8, height = 5, dpi = 200)
+  cat("Saved plot:", out_png, "\n")
+}
+
+curve_map <- list(
+  acc = "acc",
+  auc = "auc_macro",
+  f1 = "f1_macro"
+)
+curve_labels <- c(
+  acc = "Accuracy",
+  auc = "AUC",
+  f1 = "F1"
+)
+
+curve_df <- lapply(names(curve_map), function(k) {
+  col_name <- curve_map[[k]]
+  if (!(col_name %in% colnames(df))) {
+    return(NULL)
+  }
+  data.frame(
+    checkpoint_label = df$checkpoint_label,
+    metric = k,
+    value = as.numeric(df[[col_name]])
+  )
+}) %>% bind_rows()
+
+if (nrow(curve_df) > 0) {
+  curve_df$checkpoint_label <- factor(curve_df$checkpoint_label, levels = checkpoint_levels)
+  curve_df$metric <- factor(curve_df$metric, levels = names(curve_map))
+
+  p_curve <- ggplot(curve_df, aes(x = checkpoint_label, y = value, color = metric, group = metric)) +
+    geom_line(size = 0.8) +
+    geom_point(size = 1.8) +
+    scale_color_discrete(labels = curve_labels) +
+    scale_x_discrete(labels = percent_labels) +
+    labs(
+      x = "Train size",
+      y = "Metric value",
+      color = ""
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 0, hjust = 0.5),
+      legend.title = element_blank()
+    )
+
+  out_curve <- file.path(out_dir, "curve_loss_acc_auc_f1.png")
+  ggsave(out_curve, plot = p_curve, width = 8, height = 5, dpi = 200)
+  cat("Saved plot:", out_curve, "\n")
+}
+
+if ("loss" %in% colnames(df)) {
+  loss_df <- data.frame(
+    checkpoint_label = factor(df$checkpoint_label, levels = checkpoint_levels),
+    loss = as.numeric(df$loss)
+  )
+
+  p_loss <- ggplot(loss_df, aes(x = checkpoint_label, y = loss, group = 1)) +
+    geom_line(size = 0.6, color = "#2c7fb8") +
+    geom_point(size = 2, color = "#2c7fb8") +
+    scale_x_discrete(labels = percent_labels) +
+    labs(
+      x = "Train size",
+      y = "Test Loss"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
+
+  out_loss <- file.path(out_dir, "curve_test_loss.png")
+  ggsave(out_loss, plot = p_loss, width = 8, height = 5, dpi = 200)
+  cat("Saved plot:", out_loss, "\n")
+}

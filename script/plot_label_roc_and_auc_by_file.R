@@ -1,8 +1,14 @@
-args <- commandArgs(trailingOnly = TRUE)
+script_dir <- dirname(normalizePath(sys.frame(1)$ofile))
+if (is.na(script_dir) || script_dir == ".") {
+  script_dir <- getwd()
+}
 
-input_dir <- if (length(args) >= 1) args[[1]] else "."
-pattern <- if (length(args) >= 2) args[[2]] else "calibration*.csv"
-out_dir <- if (length(args) >= 3) args[[3]] else "plots_by_file"
+input_dir <- script_dir
+pattern <- "^calibration.*\\.csv$"
+base_out_dir <- file.path(script_dir, "figures", "label_roc_auc")
+if (!dir.exists(base_out_dir)) {
+  dir.create(base_out_dir, recursive = TRUE)
+}
 
 files <- list.files(input_dir, pattern = pattern, full.names = TRUE)
 if (length(files) == 0) {
@@ -19,10 +25,6 @@ library(ggplot2)
 library(dplyr)
 library(pROC)
 
-if (!dir.exists(out_dir)) {
-  dir.create(out_dir, recursive = TRUE)
-}
-
 safe_name <- function(x) {
   gsub("[^A-Za-z0-9_\\-]+", "_", x)
 }
@@ -36,6 +38,10 @@ for (path in files) {
   }
 
   file_id <- tools::file_path_sans_ext(basename(path))
+  out_dir <- file.path(base_out_dir, file_id)
+  if (!dir.exists(out_dir)) {
+    dir.create(out_dir, recursive = TRUE)
+  }
 
   auc_rows <- list()
   roc_rows <- list()
@@ -71,35 +77,43 @@ for (path in files) {
 
   if (nrow(roc_df) > 0) {
     p_roc <- ggplot(roc_df, aes(x = fpr, y = tpr, color = label, group = label)) +
-      geom_line(size = 1) +
+      geom_line(size = 0.6) +
       geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray50") +
       labs(
         x = "False Positive Rate",
         y = "True Positive Rate",
-        color = "Label",
-        title = paste("ROC by Label -", file_id)
+        color = "",
+        title = paste("ROC by Label (", gsub("^calibration_long-", "", file_id), ")")
       ) +
-      theme_minimal()
+      scale_color_discrete(labels = function(x) gsub("^calibration_long-", "", x)) +
+      theme_minimal() +
+      theme(
+        plot.title = element_text(hjust = 0.5)
+      )
 
-    out_roc <- file.path(out_dir, paste0("roc_by_label_", safe_name(file_id), ".png"))
+    out_roc <- file.path(out_dir, "roc_by_label.png")
     ggsave(out_roc, plot = p_roc, width = 7, height = 5, dpi = 200)
   }
 
   if (nrow(auc_df) > 0) {
     p_auc <- ggplot(auc_df, aes(x = label, y = auc, fill = label)) +
-      geom_boxplot(outlier.shape = NA, alpha = 0.7) +
-      geom_jitter(width = 0.15, size = 1.5, alpha = 0.8) +
+      geom_col(width = 0.7, alpha = 0.8) +
       labs(
         x = "Label",
         y = "AUC",
-        title = paste("AUC per Label -", file_id)
+        title = paste("AUC per Label (", gsub("^calibration_long-", "", file_id), ")")
       ) +
+      scale_y_continuous(breaks = seq(0.4, 1, 0.1), expand = c(0, 0)) +
+      coord_cartesian(ylim = c(0.4, 1)) +
       theme_minimal() +
-      theme(legend.position = "none")
+      theme(
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5)
+      )
 
-    out_auc <- file.path(out_dir, paste0("auc_box_by_label_", safe_name(file_id), ".png"))
+    out_auc <- file.path(out_dir, "auc_box_by_label.png")
     ggsave(out_auc, plot = p_auc, width = 7, height = 5, dpi = 200)
   }
 }
 
-cat("Saved plots to:", out_dir, "\n")
+cat("Saved plots to:", base_out_dir, "\n")

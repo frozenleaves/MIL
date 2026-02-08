@@ -10,8 +10,8 @@ suppressPackageStartupMessages({
 })
 
 args <- commandArgs(trailingOnly = TRUE)
-in_path <- if (length(args) >= 1) args[[1]] else "modality_influence_heatmap.csv"
-out_path <- if (length(args) >= 2) args[[2]] else "modality_influence_heatmap.png"
+in_path <- "C:/Users/frozen/Desktop/20260113实验需求/MIL/script/modality_influence_heatmap.csv"
+out_path <- "C:/Users/frozen/Desktop/20260113实验需求/MIL/script/figures/Modality_Heatmap/modality_influence_heatmap.png"
 
 df <- read_csv(in_path, show_col_types = FALSE)
 
@@ -27,16 +27,27 @@ p <- ggplot(plot_df, aes(x = label, y = modality, fill = norm_abs_pos)) +
   scale_fill_gradient(
     low = "#FFF3A0",   # 淡黄
     high = "#E64B35",  # 红
-    name = "Influence\n(norm)"
+    name = NULL,
+    limits = c(0, 1),
+    breaks = c(0, 1),
+    labels = c("low influence", "high influence"),
+    guide = guide_colorbar(
+      barheight = grid::unit(2.5, "in"),
+      barwidth = grid::unit(0.18, "in"),
+      ticks = FALSE
+    )
   ) +
   labs(x = NULL, y = NULL) +
+  coord_fixed() +
   theme_minimal(base_size = 12) +
   theme(
     panel.grid = element_blank(),
-    axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1),
-    legend.position = "right"
+    axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5),
+    legend.position = "right",
+    legend.title = element_blank(),
+    plot.margin = margin(6, 4, 6, 4)
   )
 
-ggsave(out_path, p, width = 11, height = 3.5, dpi = 200)
+ggsave(out_path, p, width = 10, height = 3.5, dpi = 600)
 message("Saved plot to: ", out_path)
 

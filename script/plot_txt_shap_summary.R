@@ -1,8 +1,7 @@
 #!/usr/bin/env Rscript
 
 # 用 compute_txt_ig_shap_like.py 输出的 txt_ig_shap_long.csv 画“类似 SHAP summary(beeswarm)”图
-# 输入列（新）：sample_id,class,token_id,token_decoded,shap_value,token_count,y_true
-# 兼容旧列：token
+# 输入列：sample_id,class,token,shap_value,token_count,y_true
 #
 # 用法：
 #   Rscript plot_txt_shap_summary.R txt_ig_shap_long.csv out.png
@@ -12,11 +11,13 @@ suppressPackageStartupMessages({
   library(dplyr)
   library(ggplot2)
   library(stringr)
+  library(forcats)
 })
 
 args <- commandArgs(trailingOnly = TRUE)
-in_path <- if (length(args) >= 1) args[[1]] else "txt_ig_shap_long.csv"
-out_path <- if (length(args) >= 2) args[[2]] else "txt_ig_shap_summary.png"
+in_path <- "C:/Users/frozen/Desktop/20260113实验需求/MIL/script/txt_ig_shap_long.csv"
+out_path <- "C:/Users/frozen/Desktop/20260113实验需求/MIL/script/figures/Txt_Shap_Summary/txt_ig_shap_summary.png"
+
 
 df <- read_csv(in_path, show_col_types = FALSE)
 

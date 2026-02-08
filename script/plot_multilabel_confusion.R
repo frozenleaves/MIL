@@ -134,10 +134,22 @@ plot_heatmap_7x4 <- function(df_7x4, title) {
     ggplot(aes(x = metric, y = label, fill = value)) +
     geom_tile(color = "white", linewidth = 0.4) +
     geom_text(aes(label = value), size = 3) +
-    scale_fill_gradient(low = "#F7FBFF", high = "#08306B", name = "count") +
-    labs(title = title, x = NULL, y = NULL) +
+    scale_fill_gradient(
+      low = "#FFF5F0",
+      high = "#A50F15",
+      name = NULL,
+      guide = guide_colorbar(barheight = grid::unit(0.8, "npc"))
+    ) +
+    labs(x = NULL, y = NULL) +
+    coord_fixed(ratio = 3 / 4) +
     theme_minimal(base_size = 12) +
-    theme(panel.grid = element_blank())
+    theme(
+      panel.grid = element_blank(),
+      legend.position = "right",
+      legend.justification = "center",
+      legend.box.just = "center",
+      legend.title = element_blank()
+    )
 }
 
 plot_heatmap_7x7 <- function(df_7x7, title) {
@@ -149,22 +161,38 @@ plot_heatmap_7x7 <- function(df_7x7, title) {
     ggplot(aes(x = pred_label, y = true_label, fill = value)) +
     geom_tile(color = "white", linewidth = 0.35) +
     geom_text(aes(label = value), size = 2.8) +
-    scale_fill_gradient(low = "#FFF5F0", high = "#A50F15", name = "count") +
-    labs(title = title, x = "Pred", y = "True") +
+    scale_fill_gradient(
+      low = "#FFF5F0",
+      high = "#A50F15",
+      name = NULL,
+      guide = guide_colorbar(barheight = grid::unit(0.8, "npc"))
+    ) +
+    labs(x = "Pred", y = "True") +
+    coord_fixed() +
     theme_minimal(base_size = 12) +
     theme(
       panel.grid = element_blank(),
-      axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1)
+      axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 0.5),
+      legend.position = "right",
+      legend.justification = "center",
+      legend.box.just = "center",
+      legend.title = element_blank()
     )
 }
 
 main <- function() {
   args <- commandArgs(trailingOnly = TRUE)
   opt <- parse_args(args)
+  in_dir <- "C:/Users/frozen/Desktop/20260113实验需求/MIL/script"
+  out_root <- "C:/Users/frozen/Desktop/20260113实验需求/MIL/script/figures/confusion"
+
   if (length(opt$files) == 0) {
-    stop("请在命令行参数里提供至少一个 calibration_long-*.csv 文件路径")
+    opt$files <- list.files(in_dir, pattern = "\\.csv$", full.names = TRUE)
   }
-  dir.create(opt$outdir, recursive = TRUE, showWarnings = FALSE)
+  if (length(opt$files) == 0) {
+    stop("未找到 csv 文件：", in_dir)
+  }
+  dir.create(out_root, recursive = TRUE, showWarnings = FALSE)
 
   for (path in opt$files) {
     message("Processing: ", path)
@@ -198,13 +226,15 @@ main <- function() {
 
     df_7x4 <- confusion_7x4(y_true_mat, y_pred_mat, labels)
     p1 <- plot_heatmap_7x4(df_7x4, title_7x4)
-    out1 <- file.path(opt$outdir, paste0(base, "_confusion_7x4.png"))
-    ggsave(out1, p1, width = 6.6, height = 3.6, dpi = 200)
+    out_dir <- file.path(out_root, base)
+    dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
+    out1 <- file.path(out_dir, "confusion_7x4.png")
+    ggsave(out1, p1, width = 6.0, height = 6.0, dpi = 200)
     message("Saved: ", out1)
 
     df_7x7 <- cooccurrence_7x7(y_true_mat, y_pred_mat, labels)
     p2 <- plot_heatmap_7x7(df_7x7, title_7x7)
-    out2 <- file.path(opt$outdir, paste0(base, "_cooccurrence_7x7.png"))
+    out2 <- file.path(out_dir, "cooccurrence_7x7.png")
     ggsave(out2, p2, width = 7.2, height = 6.0, dpi = 200)
     message("Saved: ", out2)
   }

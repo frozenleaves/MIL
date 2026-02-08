@@ -1,9 +1,9 @@
 args <- commandArgs(trailingOnly = TRUE)
 
-root_dir <- if (length(args) >= 1) args[[1]] else "."
-out_png <- if (length(args) >= 2) args[[2]] else "learning_curve_val_acc.png"
-out_csv <- if (length(args) >= 3) args[[3]] else "learning_curve_val_acc.csv"
-span <- if (length(args) >= 4) as.numeric(args[[4]]) else 0.6
+root_dir <- "C:/Users/frozen/Desktop/20260113实验需求/MIL/checkpoints_70_30_multi_label_20260121"
+out_png <- "C:/Users/frozen/Desktop/20260113实验需求/MIL/script/figures/learning_curve_val_acc.png"
+out_csv <- "C:/Users/frozen/Desktop/20260113实验需求/MIL/script/figures/learning_curve_val_acc.csv"
+span <- 0.6
 
 files <- list.files(root_dir, pattern = "eval_log\\.csv$", recursive = TRUE, full.names = TRUE)
 if (length(files) == 0) {
@@ -59,22 +59,31 @@ if (length(common_epochs) > 0) {
 
 if (all(!is.na(df_epoch$train_size))) {
   df_epoch$train_group <- factor(df_epoch$train_group, levels = as.character(sort(unique(df_epoch$train_size))))
+  sizes <- as.numeric(levels(df_epoch$train_group))
+  label_map <- setNames(sprintf("%.0f %%", sizes / max(sizes) * 100), levels(df_epoch$train_group))
 } else {
   df_epoch$train_group <- factor(df_epoch$train_group, levels = unique(df_epoch$train_group))
+  label_map <- NULL
 }
 
 write.csv(df_epoch, out_csv, row.names = FALSE)
 
 p <- ggplot(df_epoch, aes(x = epoch, y = val_acc, color = train_group, group = train_group)) +
   geom_point(alpha = 0.6, size = 1.2) +
-  geom_smooth(se = FALSE, method = "loess", span = span) +
+  geom_line(linewidth = 0.6) +
   labs(
     x = "Epoch",
     y = "Validation Accuracy",
-    color = "Train group",
-    title = "Learning Curve (Validation Accuracy)"
+    color = "Sampling ratio",
+    title = "Learning Curve"
   ) +
-  theme_minimal()
+  scale_y_continuous(limits = c(0, 1.0)) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+if (!is.null(label_map)) {
+  p <- p + scale_color_discrete(labels = label_map)
+}
 
 ggsave(out_png, plot = p, width = 8, height = 5, dpi = 200)
 cat("Saved plot:", out_png, "\n")
