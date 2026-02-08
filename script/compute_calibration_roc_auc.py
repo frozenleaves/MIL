@@ -65,8 +65,8 @@ def main():
         help="Directory containing calibration*.csv",
     )
     parser.add_argument("--pattern", type=str, default="calibration*.csv", help="File pattern")
-    parser.add_argument("--out_auc_csv", type=str, default="auc_per_label.csv", help="AUC output CSV")
-    parser.add_argument("--out_roc_csv", type=str, default="roc_mean_curve.csv", help="ROC output CSV")
+    parser.add_argument("--out_auc_csv", type=str, default="/mnt/c/users/frozen/Desktop/20260113实验需求/MIL/script/auc_per_label.csv", help="AUC output CSV")
+    parser.add_argument("--out_roc_csv", type=str, default="/mnt/c/users/frozen/Desktop/20260113实验需求/MIL/script/roc_mean_curve.csv", help="ROC output CSV")
     parser.add_argument("--grid_points", type=int, default=101, help="FPR grid points")
     args = parser.parse_args()
 
