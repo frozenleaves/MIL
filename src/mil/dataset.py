@@ -11,14 +11,20 @@ from .config import Config
 
 
 class MultimodalDataset(Dataset):
-    def __init__(self, data_source, mode='train', expand_factor=1):
+    def __init__(self, data_source, mode='train', expand_factor=1, use_txt=True, use_img=True, use_svs=True):
         """
         Args:
             data_source: CSV路径 (str) 或 pd.DataFrame 对象
             mode: 'train' 或 'val'/'test'
             expand_factor: (int) 仅在训练模式有效。将数据集复制多少倍。
+            use_txt: 是否使用文本模态
+            use_img: 是否使用普通图片模态
+            use_svs: 是否使用 WSI SVS 模态
         """
         self.mode = mode
+        self.use_txt = use_txt
+        self.use_img = use_img
+        self.use_svs = use_svs
         
         if isinstance(data_source, str):
             self.data = pd.read_csv(data_source)
@@ -108,14 +114,14 @@ class MultimodalDataset(Dataset):
         txt_path = row['txt_path']
         text_content = ""
         try:
-            if isinstance(txt_path, str) and os.path.exists(txt_path):
+            if self.use_txt and isinstance(txt_path, str) and os.path.exists(txt_path):
                 with open(txt_path, 'r', encoding='utf-8') as f:
                     text_content = f.read().strip()
         except Exception:
             pass
             
         # 应用文本增强
-        text_content = self._augment_text(text_content)
+        #text_content = self._augment_text(text_content)
         
         text_enc = self.tokenizer(
             text_content,
@@ -129,7 +135,10 @@ class MultimodalDataset(Dataset):
 
         # ================= 2. 读取普通图片 (多个) =================
         # 随机选取子集 (可能选出 0 张，模拟图片模态缺失)
-        img_paths = self._get_random_subset(str(row['img_paths']), min_count=0)
+        if self.use_img:
+            img_paths = self._get_random_subset(str(row['img_paths']), min_count=0)
+        else:
+            img_paths = []
         
         img_tensors = []
         for path in img_paths:
@@ -149,7 +158,10 @@ class MultimodalDataset(Dataset):
 
         # ================= 3. 读取 WSI 特征 (可能多个) =================
         # 随机选取子集
-        wsi_paths = self._get_random_subset(str(row['wsi_paths']), min_count=0)
+        if self.use_svs:
+            wsi_paths = self._get_random_subset(str(row['wsi_paths']), min_count=0)
+        else:
+            wsi_paths = []
         
         wsi_feat_list = []
         for path in wsi_paths:

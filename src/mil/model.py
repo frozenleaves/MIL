@@ -102,46 +102,56 @@ class UnifiedMultimodalModel(nn.Module):
 
         # --- 1. Text Forward ---
         # 如果冻结了，使用 no_grad
-        with torch.set_grad_enabled(not Config.FREEZE_TEXT_MODEL):
-            text_out = self.text_backbone(input_ids=input_ids, attention_mask=attention_mask)
-            # 提取特征: 这里取最后一个 Hidden State 的 Mean Pooling，或者 EOS token
-            # 简单起见，取 Mean Pooling
-            # (B, L, H) -> (B, H)
-            txt_emb = text_out.last_hidden_state
-            mask_expanded = attention_mask.unsqueeze(-1).expand(txt_emb.size()).float()
-            txt_emb = torch.sum(txt_emb * mask_expanded, 1) / torch.clamp(mask_expanded.sum(1), min=1e-9)
-        
-        txt_feat = self.text_proj(txt_emb) # (B, 512)
+        if Config.USE_TXT:
+            with torch.set_grad_enabled(not Config.FREEZE_TEXT_MODEL):
+                text_out = self.text_backbone(input_ids=input_ids, attention_mask=attention_mask)
+                # (B, L, H) -> (B, H)
+                txt_emb = text_out.last_hidden_state
+                mask_expanded = attention_mask.unsqueeze(-1).expand(txt_emb.size()).float()
+                txt_emb = torch.sum(txt_emb * mask_expanded, 1) / torch.clamp(mask_expanded.sum(1), min=1e-9)
+            txt_feat = self.text_proj(txt_emb) # (B, 512)
+        else:
+            # 返回全0特征 (B, 512)
+            txt_feat = torch.zeros(batch_size, Config.FUSION_DIM, device=input_ids.device, dtype=self.text_proj.weight.dtype)
+
 
         # --- 2. Normal Image Forward ---
         # input: (B, N, 3, 224, 224)
-        B, N, C, H, W = normal_imgs.shape
-        # Flatten batch and N: (B*N, 3, 224, 224)
-        imgs_flat = normal_imgs.view(B * N, C, H, W)
-        
-        cnn_feat = self.img_backbone(imgs_flat) # (B*N, 2048, 7, 7)
-        cnn_feat = self.img_pool(cnn_feat).flatten(1) # (B*N, 2048)
-        
-        # Unflatten: (B, N, 2048)
-        cnn_feat = cnn_feat.view(B, N, -1)
-        
-        # 投影到 512
-        cnn_feat = self.img_proj(cnn_feat) # (B, N, 512)
-        
-        # MIL 聚合: (B, N, 512) -> (B, 512)
-        # 简单的 Mask：如果有 Padding 的 0 图片，可以在这里加 Mask，简单起见假设 N 较小影响不大
-        img_feat = self.img_mil(cnn_feat) 
+        if Config.USE_IMG:
+            B, N, C, H, W = normal_imgs.shape
+            # Flatten batch and N: (B*N, 3, 224, 224)
+            imgs_flat = normal_imgs.view(B * N, C, H, W)
+            
+            cnn_feat = self.img_backbone(imgs_flat) # (B*N, 2048, 7, 7)
+            cnn_feat = self.img_pool(cnn_feat).flatten(1) # (B*N, 2048)
+            
+            # Unflatten: (B, N, 2048)
+            cnn_feat = cnn_feat.view(B, N, -1)
+            
+            # 投影到 512
+            cnn_feat = self.img_proj(cnn_feat) # (B, N, 512)
+            
+            # MIL 聚合: (B, N, 512) -> (B, 512)
+            img_feat = self.img_mil(cnn_feat) 
+        else:
+             img_feat = torch.zeros(batch_size, Config.FUSION_DIM, device=input_ids.device, dtype=self.img_proj.weight.dtype)
+
 
         # --- 3. WSI Forward ---
         # input: (B, Total_Tokens, 1280)
-        # 先降维，省显存！
-        wsi_feat = self.wsi_proj_pre(wsi_feat) # (B, Total_Tokens, 512)
-        
-        # 激活函数
-        wsi_feat = torch.relu(wsi_feat)
-        
-        # MIL 聚合 (带 Mask): (B, Total_Tokens, 512) -> (B, 512)
-        wsi_feat_agg = self.wsi_mil(wsi_feat, mask=wsi_mask)
+        if Config.USE_SVS:
+            # 先降维，省显存！
+            wsi_feat = self.wsi_proj_pre(wsi_feat) # (B, Total_Tokens, 512)
+            
+            # 激活函数
+            wsi_feat = torch.relu(wsi_feat)
+            
+            # MIL 聚合 (带 Mask): (B, Total_Tokens, 512) -> (B, 512)
+            wsi_feat_agg = self.wsi_mil(wsi_feat, mask=wsi_mask)
+        else:
+            wsi_feat_agg = torch.zeros(batch_size, Config.FUSION_DIM, device=input_ids.device, dtype=self.wsi_proj_pre.weight.dtype)
+
+        # --- 4. Fusion ---
 
         # --- 4. Fusion ---
         # Stack: [CLS, Text, Normal, WSI]

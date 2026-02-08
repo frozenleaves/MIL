@@ -16,7 +16,7 @@ from .wsi_processor import extract_wsi_features, get_virchow2_backbone
 from .wsi_processor_fast import extract_wsi_features as extract_wsi_features_fast
 
 
-def genereate_wsi_features(overwrite=False):
+def genereate_wsi_features(path=None, overwrite=False):
     # 0. 全局加载模型 (只加载一次)
     print("正在初始化 Virchow2 模型...")
     try:
@@ -25,20 +25,23 @@ def genereate_wsi_features(overwrite=False):
     except Exception as e:
         print(f"模型加载失败: {e}")
         return
-
+    if path is not None:
+        raw_data_root = path
+    else:
+        raw_data_root = Config.RAW_DATA_ROOT
     # 1. 遍历每个类别文件夹
-    if not os.path.exists(Config.RAW_DATA_ROOT):
-        print(f"数据根目录不存在: {Config.RAW_DATA_ROOT}")
+    if not os.path.exists(raw_data_root):
+        print(f"数据根目录不存在: {raw_data_root}")
         return
 
-    class_dirs = [d for d in os.listdir(Config.RAW_DATA_ROOT) if os.path.isdir(os.path.join(Config.RAW_DATA_ROOT, d))]
+    class_dirs = [d for d in os.listdir(raw_data_root) if os.path.isdir(os.path.join(raw_data_root, d))]
 
     for class_name in class_dirs:
         if class_name not in Config.CLASS_MAP:
             print(f"Skipping unknown folder: {class_name}")
             continue
 
-        class_path = os.path.join(Config.RAW_DATA_ROOT, class_name)
+        class_path = os.path.join(raw_data_root, class_name)
         sample_names = os.listdir(class_path)
 
         for sample_name in tqdm(sample_names, desc=f"Extracting features for {class_name}"):
@@ -97,7 +100,7 @@ def generate_index_file(extract_features=False, overwrite=False):
             if not os.path.isdir(sample_dir): continue
 
             # --- A. 查找 TXT 文件 ---
-            txt_files = glob.glob(os.path.join(sample_dir, "*.txt"))
+            txt_files = glob.glob(os.path.join(sample_dir, "*-mask.txt"))
             txt_path = txt_files[0] if txt_files else ""
 
             # --- B. 查找 JPG 图片 ---

@@ -238,10 +238,10 @@ def evaluate_test_set(test_root, ckpt_path=None, use_txt=True, use_img=True, use
         ft = 'txt_' if use_txt else ''
         fi = 'img_' if use_img else ''
         fs = 'svs_' if use_svs else ''
-        cm_save_path = f"results/confusion_matrix/{ft}{fi}{fs}{time.strftime('%Y%m%d_%H%M%S')}_multilabel_cm.png"
+        cm_save_path = f"results/confusion_matrix/txt_only/{ft}{fi}{fs}{time.strftime('%Y%m%d_%H%M%S')}_multilabel_cm.png"
         
         os.makedirs(os.path.dirname(cm_save_path), exist_ok=True)
-        plt.savefig(cm_save_path)
+        # plt.savefig(cm_save_path)
         print(f"\nConfusion Matrix Heatmap saved to {cm_save_path}")
         plt.close()
         
@@ -299,17 +299,18 @@ def evaluate_test_set(test_root, ckpt_path=None, use_txt=True, use_img=True, use
     fi = 'img_' if use_img else ''
     fs = 'svs_' if use_svs else ''
     
-    save_path = f"results/roc_plot/{ft}{fi}{fs}{time.strftime('%Y%m%d_%H%M%S')}_multilabel_roc.png"
+    save_path = f"results/roc_plot/txt_only/{ft}{fi}{fs}{time.strftime('%Y%m%d_%H%M%S')}_multilabel_roc.png"
     if roc_save_path: save_path = roc_save_path
     
     # Ensure results dir exists
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     
-    plt.savefig(save_path)
+    # plt.savefig(save_path)
     print(f"\nROC curve saved to {save_path}")
     plt.close()
 
 if __name__ == "__main__":
     test_root = "/media/codingma/LLM/lcx/Medical_Info_Classification/datasets/test"
+    ckpt_path = "/media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints-txt_only/best_val.pth"
     ckpt_path = "/media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints_70_30_multi_label/best_val.pth"
-    evaluate_test_set(test_root, ckpt_path=ckpt_path, use_txt=True, use_img=True , use_svs=True, enable_fallback=True)
+    evaluate_test_set(test_root, ckpt_path=ckpt_path, use_txt=True, use_img=False , use_svs=True, enable_fallback=True)
