@@ -13,8 +13,8 @@ def prepare_dataset(source_dir, target_dir, train_ratio=0.5, seed=42):
     create_symlink_split(source_dir, target_dir, train_ratio=train_ratio, seed=seed)
 
 
-def generate_wsi_features(overwrite=False):
-    gwf(overwrite=overwrite)
+def generate_wsi_features(path=None, overwrite=False):
+    gwf(path=path, overwrite=overwrite)
 
 
 def generate_index_file(extract_features=False, overwrite=False):
@@ -22,9 +22,9 @@ def generate_index_file(extract_features=False, overwrite=False):
 
 if __name__ == "__main__":
     # doc2txt("/media/codingma/LLM/data-1005")
-    #generate_wsi_features(overwrite=False)
-    source_dir = "/media/codingma/LLM/data-1005"
-    target_dir = "/media/codingma/LLM/lcx/Medical_Info_Classification/datasets"
-    create_symlink_split(source_dir, target_dir, train_ratio=0.7, seed=42)
+    # generate_wsi_features(path="/media/codingma/code/verify-data/zju", overwrite=False)
+    # source_dir = "/media/codingma/LLM/data-1005"
+    # target_dir = "/media/codingma/LLM/lcx/Medical_Info_Classification/datasets"
+    # create_symlink_split(source_dir, target_dir, train_ratio=0.7, seed=42)
     generate_index_file()
 

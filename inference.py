@@ -241,7 +241,7 @@ def evaluate_test_set(test_root, ckpt_path=None, use_txt=True, use_img=True, use
         cm_save_path = f"results/confusion_matrix/txt_only/{ft}{fi}{fs}{time.strftime('%Y%m%d_%H%M%S')}_multilabel_cm.png"
         
         os.makedirs(os.path.dirname(cm_save_path), exist_ok=True)
-        plt.savefig(cm_save_path)
+        # plt.savefig(cm_save_path)
         print(f"\nConfusion Matrix Heatmap saved to {cm_save_path}")
         plt.close()
         
@@ -305,11 +305,12 @@ def evaluate_test_set(test_root, ckpt_path=None, use_txt=True, use_img=True, use
     # Ensure results dir exists
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     
-    plt.savefig(save_path)
+    # plt.savefig(save_path)
     print(f"\nROC curve saved to {save_path}")
     plt.close()
 
 if __name__ == "__main__":
     test_root = "/media/codingma/LLM/lcx/Medical_Info_Classification/datasets/test"
     ckpt_path = "/media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints-txt_only/best_val.pth"
-    evaluate_test_set(test_root, ckpt_path=ckpt_path, use_txt=True, use_img=False , use_svs=False, enable_fallback=True)
+    ckpt_path = "/media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints_70_30_multi_label/best_val.pth"
+    evaluate_test_set(test_root, ckpt_path=ckpt_path, use_txt=True, use_img=False , use_svs=True, enable_fallback=True)

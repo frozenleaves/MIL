@@ -6,7 +6,7 @@ class Config:
     RAW_DATA_ROOT = "/media/codingma/LLM/lcx/Medical_Info_Classification/datasets/train"
     #RAW_DATA_ROOT = "/media/codingma/LLM/data-1005"
 
-    DATA_INDEX_PATH = "/media/codingma/LLM/lcx/Medical_Info_Classification/datasets/train/index.csv"
+    DATA_INDEX_PATH = "/media/codingma/LLM/lcx/Medical_Info_Classification/datasets/train/index_20260207.csv"
     OVERWRITE_SWI_FEATURES = False
 
     # 模型路径
@@ -58,7 +58,10 @@ class Config:
 
     # ================= 训练参数 =================
     # 权重保存目录
-    CHECKPOINT_DIR = "/media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints-txt_only"
+    # CHECKPOINT_DIR = "/media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints-txt_only"
+    CHECKPOINT_DIR = "/media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints_70_30_multi_label_20260207"
+    #CHECKPOINT_DIR = "/media/codingma/LLM/lcx/Medical_Info_Classification/checkpoints_70_30_multi_label"
+
     
     # [模型容量配置]
     FUSION_DIM = 768       # 512 -> 768 (增大维度)
@@ -88,5 +91,12 @@ class Config:
 
     # [模态开关]
     USE_TXT = True
-    USE_IMG = False
-    USE_SVS = False
+    USE_IMG = True
+    USE_SVS = True
+
+    # ================= 学习曲线参数 =================
+    # 训练集规模可用“比例(<=1)”或“绝对数量(>1)”
+    LEARNING_CURVE_ENABLE = False
+    LEARNING_CURVE_TRAIN_SIZES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 1.0]
+    LEARNING_CURVE_REPEATS = 1
+    LEARNING_CURVE_BASE_SEED = 42
